@@ -1,0 +1,172 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% fphw Assignment
+% LaTeX Template
+% Version 1.0 (27/04/2019)
+%
+% This template originates from:
+% https://www.LaTeXTemplates.com
+%
+% Authors:
+% Class by Felipe Portales-Oliva (f.portales.oliva@gmail.com) with template 
+% content and modifications by Vel (vel@LaTeXTemplates.com)
+%
+% Template (this file) License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[
+	12pt, % Default font size, values between 10pt-12pt are allowed
+	%letterpaper, % Uncomment for US letter paper size
+	%spanish, % Uncomment for Spanish
+]{fphw}
+
+% Template-specific packages
+\usepackage[utf8]{inputenc} % Required for inputting international characters
+\usepackage[T1]{fontenc} % Output font encoding for international characters
+\usepackage{mathpazo} % Use the Palatino font
+\usepackage{graphicx} % Required for including images
+\usepackage{booktabs} % Required for better horizontal rules in tables
+\usepackage{listings} % Required for insertion of code
+\usepackage{enumerate} % To modify the enumerate environment
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\graphicspath{{./images/}}
+\usepackage{framed} % or, "mdframed"
+\usepackage[framed]{ntheorem}
+\usepackage{amssymb}
+\newframedtheorem{frm-thm}{Theorem}
+% \newtheorem{theorem}{Theorem}
+\usepackage{tikz} 
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+\urlstyle{same}
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT INFORMATION
+%----------------------------------------------------------------------------------------
+
+\title{ Entity Resolution in Dissimilarity Spaces} % Assignment title
+% \author{} % Student name
+% \date{Winter Semester 2020-2021} % Due date
+\institute{University of Athens \\ Department of Informatics and Telecommunications} % Institute or school name
+% \class{Artificial Intelligence II } % Course or class name
+%----------------------------------------------------------------------------------------
+\begin{document}
+\maketitle % Output the assignment title, created automatically using the information in the custom commands above
+%----------------------------------------------------------------------------------------
+%	ASSIGNMENT CONTENT
+%----------------------------------------------------------------------------------------
+\section{INTRODUCTION}
+
+\textbf{Dissimilarity-based:} Dissimilarities have been used in pattern recognition for a long time. In the first approach the dissimilarity matrix is considered as a set of row vectors,
+one for every object. They represent the objects in a vector space constructed by the
+dissimilarities to the other objects. Usually, this vector space is treated as a Euclidean
+4
+space and equipped with the standard inner product definition.
+
+
+
+
+\section{RELATED WORK}
+\section{A DISSIMILARITY-BASED SPACE EMBEDDING METHOLOGY }
+
+\textit{The Vantage Objects approach maps
+pairwise distances of input objects into an $ n -$ dimensional space
+of pivot objects which is known as vantage space in such a way
+that points that lie close to each other in this space correspond to
+similar objects in the original dissimilarity space.}
+\\
+\textbf{Remarks}\
+\begin{itemize}
+    \item Creating a chorus of distances so that every pair has a distance.
+\end{itemize}
+\begin{center}
+    . \noindent\rule{5cm}{0.5pt} .
+\end{center}
+\\
+\textit{Chorus of
+Prototypes Transform (CT) on the other hand proposes the use of
+a rank correlation coefficient defined on the data induced by the
+distances of the input objects from the pivot objects.}
+\\
+\textbf{Remarks}\
+\begin{itemize}
+    \item 
+\end{itemize}
+\begin{center}
+    . \noindent\rule{5cm}{0.5pt} .
+\end{center}
+\\
+\textit{We demonstrate our approach with string objects and in order
+to come up with a set of string prototypes which will be used for
+embedding the string objects into an N-dimensional space, we apply a string clustering algorithm which we propose in this paper.Then the individual strings are embedded in the space generated
+by these prototypes.}
+\\
+\textbf{Remarks}\
+\begin{itemize}
+    \item Object data type is string. Suppose that the object is a camera and in some way I merge the features into one string. 
+\end{itemize}
+\begin{center}
+    . \noindent\rule{5cm}{0.5pt} .
+\end{center}
+\\
+\textit{To avoid the high complexity of the pairwise comparison of the
+embedded objects, a Locality Sensitive Hashing approach which
+has been proposed for partially ranked data is also applied that
+relies on the Kendall Tau rank correlation metric so that we exclude
+from consideration pairs of objects which do not have the potential
+of being real matches.}
+\\
+\textbf{Remarks}\
+\begin{itemize}
+    \item \textbf{LSH} is an algorithmic technique that hashes similar input items into the same "buckets" with high probability. Since similar items end up in the same buckets, this technique can be used for data clustering and nearest neighbor search. It differs from conventional hashing techniques in that hash collisions are maximized, not minimized. Alternatively, the technique can be seen as a way to reduce the dimensionality of high-dimensional data; high-dimensional input items can be reduced to low-dimensional versions while preserving relative distances between items.
+    \item \textbf{Kendal Tau rank}
+        \begin{align}
+            \tau = \frac{\textbf{(#concordant pairs) - (#discordant pairs)}}{{n \choose 2}}
+        \end{align}
+        Where concordant pairs if $(x_i,y_i)$ and $(x_j,y_j)$ if $i<j$ and discordant the opposite\\
+\end{itemize}
+\begin{center}
+    . \noindent\rule{5cm}{0.5pt} .
+\end{center}
+\\
+\\
+\\
+\textbf{Hausdorff metric:}  it is the greatest of all the distances from a point in one set to the closest point in the other set.
+\\
+\subsection{String Clustering and Prototype Selection} 
+\\
+\textit{\\We observe that if we apply the triangle inequality for the distance $d(C,E)$ both triangles ACE and CEB and we arrive at the following inequality. Please note that the edit distance is a metric and for such a metric the triangle inequality holds.}
+\\
+\textbf{Remarks}\
+\begin{itemize}
+    \item \textbf{Triangle inequality} $||x+y|| \le ||x|| + ||y||$
+    \item \textbf{ Edit distance} In computational linguistics and computer science, edit distance is a way of quantifying how dissimilar two strings (e.g., words) are to one another by counting the minimum number of operations required to transform one string into the other. 
+\end{itemize}
+\begin{center}
+    . \noindent\rule{5cm}{0.5pt} .
+\end{center}
+\\
+
+
+
+
+\subsection{The Vantage Embedding and the Chorus of Prototypes Transform Similarity Coefficient} 
+\subsection{A Top-k List Approach for Similarity Searching in the Vantage Space}
+\subsection{Hashing of Partially Ranked Data for Efficient Similarity Search} 
+\section{EVALUATION}
+\subsection{Experimental results} 
+\section{CONCLUSIONS}
+
+
+%------------------------------------------------
+\end{document}
