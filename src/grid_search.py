@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep  7 12:59:01 2021
+Created on Wed Sep  8 16:44:46 2021
 
 @author: Nikolelos Konstantinos
 """
-
-
 import pandas as pd
 import numpy as np
 import collections
@@ -217,15 +215,7 @@ number_of_permutations = 5                 # WTA number of permutations
 similarityThreshold= 0.7                    # Similarity threshold for the final step
 metric='kendal'                             # Similarity metric between vectors
 
-
-start = time.time()
-model = RankedWTAHash(max_numberOf_clusters= max_numberOf_clusters, max_editDistance= max_editDistance, windowSize= windowSize, similarityThreshold= similarityThreshold, metric=metric, similarityVectors=similarityVectors, number_of_permutations = number_of_permutations, distanceMetric= distanceMetric, distanceMetricEmbedding = distanceMetricEmbedding, ngramms= ngramms, jaccard_withchars=jaccard_withchars,prototypesFilterThr=prototypesFilterThr)
-model = model.fit(data)
-acc,f1,precision,recall = evaluate_cora(model.mapping_matrix,true_matrix, False)
-exec_time = time.time() - start
-results_dataframe.loc[len(results_dataframe)+1] = [max_numberOf_clusters,max_editDistance,similarityThreshold,windowSize,metric,similarityVectors,distanceMetricEmbedding,distanceMetric,number_of_permutations,ngramms,jaccard_withchars,acc,precision,recall,f1,exec_time]
-
-# ----------- EDIT params ----------- #
+# ----------- EDIT distance params ----------- #
 
 jaccard_withchars = False                    # n-gramms either of chars and either of words
 
@@ -247,3 +237,10 @@ number_of_permutations = 20                 # WTA number of permutations
 # 4.Similarity evaluation
 similarityThreshold= 0.7                    # Similarity threshold for the final step
 metric='kendal'                             # Similarity metric between vectors
+
+start = time.time()
+model = RankedWTAHash(max_numberOf_clusters= max_numberOf_clusters, max_editDistance= max_editDistance, windowSize= windowSize, similarityThreshold= similarityThreshold, metric=metric, similarityVectors=similarityVectors, number_of_permutations = number_of_permutations, distanceMetric= distanceMetric, distanceMetricEmbedding = distanceMetricEmbedding, ngramms= ngramms, jaccard_withchars=jaccard_withchars,prototypesFilterThr=prototypesFilterThr)
+model = model.fit(data)
+acc,f1,precision,recall = evaluate_cora(model.mapping_matrix,true_matrix, False)
+exec_time = time.time() - start
+results_dataframe.loc[len(results_dataframe)+1] = [max_numberOf_clusters,max_editDistance,similarityThreshold,windowSize,metric,similarityVectors,distanceMetricEmbedding,distanceMetric,number_of_permutations,ngramms,jaccard_withchars,acc,precision,recall,f1,exec_time]
