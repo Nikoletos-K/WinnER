@@ -5,7 +5,7 @@ import networkx as nx
 
 from ..utils.text_process import preprocess
 
-def cora_createDataset(cora_dataframe, true_values, fields, id_column, keepNone = False, preprocessEnabled=True):
+def createDataset(cora_dataframe, true_values, fields, id_column, keepNone = False, preprocessEnabled=True):
 
     rawStr_col = []
     index_to_id_dict = {}
@@ -33,13 +33,8 @@ def cora_createDataset(cora_dataframe, true_values, fields, id_column, keepNone 
 
     return rawStr_col, trueValues_matrix
 
-def isna(value):
-    if isinstance(value, float) and math.isnan(value):
-        return True 
-    else:
-        return False
-    
-def create_trueLabels(idColumn,groundTruth):
+def createTrueLabels(idColumn,groundTruth):
+
     data = list(zip(groundTruth.id1, groundTruth.id2))
     G = nx.Graph()
     G.add_edges_from(data)
@@ -56,3 +51,11 @@ def create_trueLabels(idColumn,groundTruth):
             newId+=1
             
     return labels_groundTruth,newId,groups
+
+
+def isna(value):
+    if isinstance(value, float) and math.isnan(value):
+        return True 
+    else:
+        return False
+    

@@ -167,8 +167,8 @@ class RankedWTAHash:
         print("\n-> Creating WTA Buckets:")
 
         wta_time = time.time()
-        wta = WTA(self.windowSize, self.number_of_permutations. self.wtaM)
-        self.HashedClusters,self.buckets,self.rankedVectors = WTA.fit(self.Embeddings)
+        wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM)
+        self.HashedClusters, self.buckets, self.rankedVectors = wta.fit(self.Embeddings)
         
         if self.verboseLevel > 0:
             print("- WTA buckets: ")

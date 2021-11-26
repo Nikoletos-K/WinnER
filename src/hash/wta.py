@@ -85,6 +85,7 @@ def wtaSimilarity(vector1, vector2):
     return PO
 
 def wtaThreshold(x):    
+    
     if x>0:
         return 1
     else:
