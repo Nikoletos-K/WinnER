@@ -2,6 +2,8 @@
 @author: Konstantinos Nikoletos, 2021
 '''
 import math
+import numpy as np
+from scipy import stats, special
 
 def kendall_top_k(a,b,k=None,p=0): #zero is equal 1 is max distance, compare with 1-scipy.stats.kendalltau(a,b)/2+1/2
     """

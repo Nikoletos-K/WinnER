@@ -3,6 +3,8 @@
 '''
 import numpy as np
 import warnings
+from tqdm.notebook import tqdm as tqdm
+
 
 class WTA:
     
@@ -11,7 +13,6 @@ class WTA:
         self.K = K
         self.number_of_permutations = number_of_permutations
         self.m = m
-        
     
     def fit(self, vectors):
         '''
@@ -36,7 +37,7 @@ class WTA:
         C = np.empty([numOfVectors,self.number_of_permutations], dtype=np.object)
 
         permutation_dimension = vectorDim
-        for permutation_index in range(0,self.number_of_permutations,1):
+        for permutation_index in tqdm(range(0,self.number_of_permutations,1), desc="WTA hashing", dynamic_ncols = True):
 
             # randomization is without replacement and has to be consistent 
             # across all samples and hence the notion of permutations

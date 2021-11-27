@@ -1,6 +1,5 @@
-import pandas_read_xml as pdx
 import matplotlib.pyplot as plt
-import seaborn as sns
+from mpl_toolkits.mplot3d import Axes3D
 from tqdm.notebook import tqdm as tqdm
 from sklearn.decomposition import PCA 
 from sklearn.manifold import MDS
@@ -164,6 +163,7 @@ def WTA_PCA_SpaceVisualization_3D(X,Prototypes,Labels,title='PCA visualization',
         print("Explained varianse of PCA:", pca.explained_variance_ratio_)
 
     if not withgroundruth:
+        print(Labels)
         labels = [",".join(item) for item in Labels.astype(str)]
         mydict={}
         i = 0
@@ -173,11 +173,9 @@ def WTA_PCA_SpaceVisualization_3D(X,Prototypes,Labels,title='PCA visualization',
             else:    
                i = i+1
                mydict[item] = i
-
         k=[]
         for item in labels:
             k.append(mydict[item])
-        
     else:
         k=groundruth
 

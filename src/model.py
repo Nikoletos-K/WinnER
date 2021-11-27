@@ -1,37 +1,25 @@
 '''
 @author: Konstantinos Nikoletos, 2021
 '''
-import pandas as pd
 import numpy as np
 import editdistance
 import sklearn
 import time
 import warnings
-import matplotlib.pyplot as plt
-import seaborn as sns
 import nltk
 import math
-import os
-import scipy.special as special
-import igraph
-import networkx as nx
 
 from tqdm.notebook import tqdm as tqdm
-from scipy.spatial.distance import directed_hausdorff,hamming
+from scipy.spatial.distance import hamming
 from scipy.stats._stats import _kendall_dis
 from scipy.stats import spearmanr,kendalltau,pearsonr,kruskal,mannwhitneyu
 from sklearn.metrics.pairwise import cosine_similarity
-from nltk.metrics.distance import jaro_similarity,jaro_winkler_similarity,jaccard_distance
-from sklearn.metrics import jaccard_score,accuracy_score,auc,f1_score,recall_score,precision_score,classification_report
-from scipy.sparse import csr_matrix
-from scipy import sparse
+from nltk.metrics.distance import jaccard_distance
+from sklearn.metrics import jaccard_score, accuracy_score, f1_score, recall_score, precision_score, classification_report
 from scipy import stats 
-from scipy.spatial.distance import euclidean,hamming,jaccard
-from matplotlib.patches import Rectangle
+from scipy.spatial.distance import hamming,jaccard
 from sklearn.metrics import ndcg_score
-from datetime import datetime
-from sklearn.decomposition import PCA 
-from numpy.linalg import svd
+
 
 # --------------------------------- #
 # ---- Import from local files ---- #
@@ -54,7 +42,7 @@ class RankedWTAHash:
                  distanceMetricEmbedding = 'euclidean', metric = 'kendal', similarityVectors='ranked', 
                  distanceMetric = 'edit', prototypesFilterThr = None, ngramms = None, 
                  similarityThreshold = None, maxOnly = None, earlyStop=0, 
-                 verboseLevel=0, rbo_p = 0.7, wtaM = 1):
+                 verboseLevel=0, rbo_p = 0.7, wtaM = 1, disableTqdm = False):
         '''
           Constructor
         '''
@@ -81,6 +69,7 @@ class RankedWTAHash:
         self.verboseLevel = verboseLevel
         self.rbo_p = rbo_p
         self.wtaM = wtaM
+        self.disableTqdm = disableTqdm
 
     def hackForDebug(self, labels_groundTruth, true_matrix):
         self.labels_groundTruth = labels_groundTruth
@@ -98,7 +87,9 @@ class RankedWTAHash:
           -------
           self : The fitted classifier.
         """
-        print("\n#####################################################################\n#     .~ RankedWTAHash with Vantage embeddings starts training ~.   #\n#####################################################################\n")
+
+        if self.verboseLevel >=0 :
+            print("\n#####################################################################\n#     .~ RankedWTAHash with Vantage embeddings starts training ~.   #\n#####################################################################\n")
 
         if isinstance(X, list):
             input_strings = X
@@ -121,8 +112,10 @@ class RankedWTAHash:
             print(self.S_index)
             print("\n")
 
-        print("###########################################################\n# > 1. Prototype selection phase                          #\n###########################################################\n")
-        print("\n-> Finding prototypes and representatives of each cluster:")
+        if self.verboseLevel >=0 :
+            print("###########################################################\n# > 1. Prototype selection phase                          #\n###########################################################\n")
+            print("\n-> Finding prototypes and representatives of each cluster:")
+        
         prototypes_time = time.time()
         self.prototypeArray,self.selected_numOfPrototypes = self.Clustering_Prototypes(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance, self.pairDictionary)
         self.embeddingDim = self.prototypeArray.size
@@ -138,33 +131,40 @@ class RankedWTAHash:
                 self.selectionVariance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
                 print("\n- Mean variance in prototype selection: ", self.selectionVariance)
 
-        print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
         prototypes_time = time.time() - prototypes_time
-        print("\n# Finished in %.6s secs" % (prototypes_time))
-        print("\n")
+        if self.verboseLevel >=0 :
+            print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
+            print("\n# Finished in %.6s secs" % (prototypes_time))
+            print("\n")
 
         if self.earlyStop==1:
             return self
 
-        print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
-        print("\n-> Creating Embeddings:")
+        if self.verboseLevel >=0 :
+            print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
+            print("\n-> Creating Embeddings:")
         embeddings_time = time.time()
         self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray, self.pairDictionary)
-        print("- Embeddings created")
+   
+        if self.verboseLevel >=0 :
+            print("- Embeddings created")
        
         if self.verboseLevel > 0:
             print(self.Embeddings)
             PCA_SpaceVisualization(self.Embeddings, self.prototypeArray)        
         
         embeddings_time = time.time() - embeddings_time
-        print("\n# Finished in %.6s secs" % (embeddings_time))
-        print("\n")
+
+        if self.verboseLevel >=0 :
+            print("\n# Finished in %.6s secs" % (embeddings_time))
+            print("\n")
 
         if self.earlyStop==2:
             return self
 
-        print("###########################################################\n# > 3. WTA Hashing                                        #\n###########################################################\n")
-        print("\n-> Creating WTA Buckets:")
+        if self.verboseLevel >=0 :
+            print("###########################################################\n# > 3. WTA Hashing                                        #\n###########################################################\n")
+            print("\n-> Creating WTA Buckets:")
 
         wta_time = time.time()
         wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM)
@@ -175,7 +175,8 @@ class RankedWTAHash:
             for key in self.buckets.keys():
                 print(key," -> ",self.buckets[key])
         
-        print("\n- WTA number of buckets: ", len(self.buckets.keys()))
+        if self.verboseLevel >=0 :
+            print("\n- WTA number of buckets: ", len(self.buckets.keys()))
         
         if self.verboseLevel > 1:
             print("\n- WTA RankedVectors after permutation:")
@@ -188,14 +189,17 @@ class RankedWTAHash:
                 WTA_PCA_SpaceVisualization_3D(self.Embeddings, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
 
         wta_time = time.time() - wta_time
-        print("\n# Finished in %.6s secs" % (wta_time))
-        print("\n")
+
+        if self.verboseLevel >=0 :
+            print("\n# Finished in %.6s secs" % (wta_time))
+            print("\n")
         
         if self.earlyStop==3:
             return self
 
-        print("###########################################################\n# > 4. Similarity checking                                #\n###########################################################\n")
-        print("\n-> Similarity checking:")
+        if self.verboseLevel >=0 :
+            print("###########################################################\n# > 4. Similarity checking                                #\n###########################################################\n")
+            print("\n-> Similarity checking:")
 
         similarity_time = time.time()
 
@@ -217,8 +221,10 @@ class RankedWTAHash:
             print("\n- Total number of comparisons of different objects with success: ", self.diffObjectsComparedSuccess)
         
         similarity_time = time.time() - similarity_time
-        print("\n# Finished in %.6s secs" % (similarity_time))
-        print("\n#####################################################################\n#                           .~  End  ~.                             #\n#####################################################################\n")
+
+        if self.verboseLevel >=0 :
+            print("\n# Finished in %.6s secs" % (similarity_time))
+            print("\n#####################################################################\n#                           .~  End  ~.                             #\n#####################################################################\n")
 
         return self
 
@@ -265,7 +271,7 @@ class RankedWTAHash:
 
         Clusters = [ [] for l in range(0,k)]
 
-        for i in tqdm(range(0,S.size,1)):     # String-clustering phase, for all strings
+        for i in tqdm(range(0,S.size,1), desc="Prototype selection", disable = self.disableTqdm, dynamic_ncols = True):     # String-clustering phase, for all strings
             while j < k :       # iteration through clusters, for all clusters
                 if r[0][j] == None:      # case empty first representative for cluster j
                     r[0][j] = S[i]   # init cluster representative with string i
@@ -405,7 +411,7 @@ class RankedWTAHash:
 
         # ------- Distance computing ------- #
         vectors = []
-        for s in tqdm(range(0,S.size)):
+        for s in tqdm(range(0,S.size), desc="Creating embeddings", disable = self.disableTqdm, dynamic_ncols = True):
             string_embedding = []
             for p in range(0,VantageObjects.size):
                 if VantageObjects[p] != None:
@@ -479,7 +485,7 @@ class RankedWTAHash:
         self.sameObjectsComparedSuccess = 0
         
         # Loop for every bucket
-        for bucketid in tqdm(buckets.keys()):
+        for bucketid in tqdm(buckets.keys(), desc="Similarity checking", disable = self.disableTqdm, dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
             numOfVectors = len(bucket_vectors)
             
@@ -557,18 +563,49 @@ class RankedWTAHash:
 
     
     
-#####################################################################
-#                          Evaluation                               # 
-#####################################################################
+    #####################################################################
+    #                          Evaluation                               # 
+    #####################################################################
+
+    def evaluate(self, predicted_matrix, true_matrix, with_classification_report=False, with_confusion_matrix=False, with_detailed_report=False):
+        
+        if self.verboseLevel >= 0:
+            print("#####################################################################\n#                          Evaluation                               #\n#####################################################################\n")
+        transformToVector = np.triu_indices(len(true_matrix))    
+        true_matrix = true_matrix[transformToVector]
+        predicted_matrix = predicted_matrix[transformToVector]
+        
+        acc = 100*accuracy_score(true_matrix, predicted_matrix)
+        f1 =  100*f1_score(true_matrix, predicted_matrix)
+        recall = 100*recall_score(true_matrix, predicted_matrix)
+        precision = 100*precision_score(true_matrix, predicted_matrix)
+
+        if self.verboseLevel >= 0:
+            print("Accuracy:  %3.2f %%" % (acc))
+            print("F1-Score:  %3.2f %%" % (f1))
+            print("Recall:    %3.2f %%" % (recall))
+            print("Precision: %3.2f %%" % (precision))
+
+        if with_classification_report:
+            print("\nClassification report:\n")
+            print(classification_report(true_matrix, predicted_matrix))
+            print('\n')
+        
+        if with_confusion_matrix:
+            cm = sklearn.metrics.confusion_matrix(true_matrix,predicted_matrix,labels=[0,1])
+            create_ConfusionMatrix(cm,'Confusion matrix')
+            print('\n\n')
+
+        if with_detailed_report:
+            report(self)
+        
+        return acc,f1,precision,recall
 
 def report(model):
     
-    print("\n--- DETAILED REPORT ---\n\n")
+    print("-----------------------\n--- DETAILED REPORT ---\n-----------------------\n")
     print("\n> 1. Prototype selection\n")
-    
-    
     print("\n> 2. Embedding phase\n")
-    
     print("\n> 3. WTA hashing\n")
     print("Number of buckets created ", len(model.buckets.keys()))
     for key in model.buckets.keys():
@@ -614,33 +651,3 @@ def customClassificationReport(predicted_matrix, true_matrix):
     print("True negatives:  ", true_negatives)
     print("False positives: ", false_positives)
     print("False negatives: ", false_negatives)
-
-def evaluate(predicted_matrix, true_matrix, with_classification_report=False):
-
-    print("#####################################################################\n#                          Evaluation                               #\n#####################################################################\n")
-    transformToVector = np.triu_indices(len(true_matrix))    
-    true_matrix = true_matrix[transformToVector]
-    predicted_matrix = predicted_matrix[transformToVector]
-    
-    acc = 100*accuracy_score(true_matrix, predicted_matrix)
-    f1 =  100*f1_score(true_matrix, predicted_matrix)
-    recall = 100*recall_score(true_matrix, predicted_matrix)
-    precision = 100*precision_score(true_matrix, predicted_matrix)
-
-    print("Accuracy:  %3.2f %%" % (acc))
-    print("F1-Score:  %3.2f %%" % (f1))
-    print("Recall:    %3.2f %%" % (recall))
-    print("Precision: %3.2f %%" % (precision))
-
-    if with_classification_report:
-        print("\nClassification report:\n")
-        print(classification_report(true_matrix, predicted_matrix))
-    
-    print('\n')
-    
-    cm = sklearn.metrics.confusion_matrix(true_matrix,predicted_matrix,labels=[0,1])
-    create_ConfusionMatrix(cm,'Confusion matrix')
-    
-    print('\n\n')
-    
-    return acc,f1,precision,recall
