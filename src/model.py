@@ -660,20 +660,37 @@ def customClassificationReport(predicted_matrix, true_matrix):
 
 def set_params(params_dict):
 
-    max_numberOf_clusters = "max_numberOf_clusters"
-    max_dissimilarityDistance = "max_dissimilarityDistance"
-    windowSize = "windowSize"
-    similarityThreshold = "similarityThreshold"
-    metric = "metric"
-    min_numOfNodes = "min_numOfNodes"
-    similarityVectors = "similarityVectors"
-    number_of_permutations = "number_of_permutations"
-    distanceMetric = "distanceMetric"
-    distanceMetricEmbedding = "distanceMetricEmbedding"
-    ngramms = "ngramms"
-    jaccard_withchars =  "jaccard_withchars"
-    prototypesFilterThr = "prototypesFilterThr"
-    verboseLevel = "verboseLevel"
-    rbo_p = "rbo_p"
-    wtaM = "wtaM"
-    disableTqdm = "disableTqdm"
+    max_numberOf_clusters = params_dict["max_numberOf_clusters"]
+    max_dissimilarityDistance = params_dict["max_dissimilarityDistance"]
+    windowSize = params_dict["windowSize"]
+    similarityThreshold = params_dict["similarityThreshold"]
+    metric = params_dict["metric"]
+    similarityVectors = params_dict["similarityVectors"]
+    number_of_permutations = params_dict["number_of_permutations"]
+    distanceMetric = params_dict["distanceMetric"]
+    distanceMetricEmbedding = params_dict["distanceMetricEmbedding"]
+    ngramms = params_dict["ngramms"]
+    jaccard_withchars =  params_dict["jaccard_withchars"]
+    prototypesFilterThr = params_dict["prototypesFilterThr"]
+    # rbo_p = params_dict["rbo_p"]
+    wtaM = params_dict["wtaM"]
+
+    modelCreated = RankedWTAHash(
+        max_numberOf_clusters= max_numberOf_clusters,
+        max_dissimilarityDistance= max_dissimilarityDistance,
+        windowSize= windowSize,
+        similarityThreshold= similarityThreshold,
+        metric=metric,
+        similarityVectors=similarityVectors,
+        number_of_permutations = number_of_permutations,
+        distanceMetric= distanceMetric,
+        distanceMetricEmbedding = distanceMetricEmbedding,
+        ngramms= ngramms,
+        jaccard_withchars = jaccard_withchars,
+        prototypesFilterThr = prototypesFilterThr,
+        verboseLevel = 0,
+        # rbo_p = rbo_p,
+        wtaM = wtaM
+    )
+
+    return modelCreated
