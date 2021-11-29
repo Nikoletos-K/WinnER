@@ -167,7 +167,7 @@ class RankedWTAHash:
             print("\n-> Creating WTA Buckets:")
 
         wta_time = time.time()
-        wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM)
+        wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM, self.disableTqdm)
         self.HashedClusters, self.buckets, self.rankedVectors = wta.fit(self.Embeddings)
         
         if self.verboseLevel > 0:
@@ -204,12 +204,15 @@ class RankedWTAHash:
         similarity_time = time.time()
 
         if self.similarityVectors == 'ranked':
-            self.mapping,self.mapping_matrix = self.SimilarityEvaluation(self.buckets,self.rankedVectors,self.similarityThreshold,maxOnly=self.maxOnly, metric=self.metric)
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets,self.rankedVectors,self.similarityThreshold,maxOnly=self.maxOnly, metric=self.metric)
         elif self.similarityVectors == 'initial':
-            self.mapping,self.mapping_matrix = self.SimilarityEvaluation(self.buckets,self.Embeddings,self.similarityThreshold,maxOnly=self.maxOnly, metric=self.metric)
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets,self.Embeddings,self.similarityThreshold,maxOnly=self.maxOnly, metric=self.metric)
         else:
             warnings.warn("similarityVectors: Available options are: ranked,initial")
         
+        if self.mapping == None and self.mapping_matrix == None:
+            return None
+
         if self.verboseLevel > 1:
             print("- Similarity mapping in a matrix")
             print(self.mapping_matrix)
@@ -503,6 +506,9 @@ class RankedWTAHash:
                         metric = 'kendal'
                     
                     self.numOfComparisons+=1
+
+                    if self.numOfComparisons >= 250000:
+                        return None, None
                     
                     if metric == None or metric == 'kendal':  # Simple Kendal tau metric
                         similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
@@ -651,3 +657,23 @@ def customClassificationReport(predicted_matrix, true_matrix):
     print("True negatives:  ", true_negatives)
     print("False positives: ", false_positives)
     print("False negatives: ", false_negatives)
+
+def set_params(params_dict):
+
+    max_numberOf_clusters = "max_numberOf_clusters"
+    max_dissimilarityDistance = "max_dissimilarityDistance"
+    windowSize = "windowSize"
+    similarityThreshold = "similarityThreshold"
+    metric = "metric"
+    min_numOfNodes = "min_numOfNodes"
+    similarityVectors = "similarityVectors"
+    number_of_permutations = "number_of_permutations"
+    distanceMetric = "distanceMetric"
+    distanceMetricEmbedding = "distanceMetricEmbedding"
+    ngramms = "ngramms"
+    jaccard_withchars =  "jaccard_withchars"
+    prototypesFilterThr = "prototypesFilterThr"
+    verboseLevel = "verboseLevel"
+    rbo_p = "rbo_p"
+    wtaM = "wtaM"
+    disableTqdm = "disableTqdm"
