@@ -36,7 +36,7 @@ class WTA:
             self.K = vectorDim
             warnings.warn("Window size greater than vector dimension")
 
-        C = np.empty([numOfVectors,self.number_of_permutations], dtype=np.object)
+        C = np.empty([numOfVectors], dtype=np.object)
 
         permutation_dimension = vectorDim
         for permutation_index in tqdm(range(0,self.number_of_permutations,1), desc="WTA hashing", dynamic_ncols = True, disable = self.disableTqdm):
@@ -54,12 +54,12 @@ class WTA:
                     X_new = self.permuted(vectors[v_index],theta)
                     newVectors[v_index] = X_new
 
-                C[i][permutation_index] = np.argsort(X_new[:self.K])[-self.m:].tolist()
+                C[i] = np.argsort(X_new[:self.K])[-self.m:].tolist()
                 i+=1
 
             
         for c, i in zip(C, range(0, numOfVectors, 1)):
-            buckets = self.bucketInsert(buckets, frozenset(c[0]), i)
+            buckets = self.bucketInsert(buckets, str(c), i)
 
         return C, buckets, np.array(newVectors,dtype=np.intp)
 
