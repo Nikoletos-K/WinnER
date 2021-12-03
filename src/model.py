@@ -26,7 +26,7 @@ from sklearn.metrics import ndcg_score
 # --------------------------------- #
 
 from hash.wta import WTA, wtaSimilarity
-from plot.dimension_reduction import WTA_PCA_SpaceVisualization, WTA_PCA_SpaceVisualization_3D, PCA_SpaceVisualization, PCA_SpaceVisualization_3D
+from plot.dimension_reduction import SpaceVisualization2D, SpaceVisualization3D, SpaceVisualizationEmbeddings3D
 from plot.heatmap import myHeatmap
 from plot.confusion_matrix import create_ConfusionMatrix
 from utils.metrics import *
@@ -151,7 +151,7 @@ class RankedWTAHash:
        
         if self.verboseLevel > 0:
             print(self.Embeddings)
-            PCA_SpaceVisualization(self.Embeddings, self.prototypeArray)        
+            SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
         
         embeddings_time = time.time() - embeddings_time
 
@@ -184,9 +184,9 @@ class RankedWTAHash:
 
         if self.verboseLevel > 0:
             if self.similarityVectors == 'ranked':
-                WTA_PCA_SpaceVisualization_3D(self.rankedVectors, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
+                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
             elif self.similarityVectors == 'initial':
-                WTA_PCA_SpaceVisualization_3D(self.Embeddings, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
+                SpaceVisualizationEmbeddings3D(self.Embeddings, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
 
         wta_time = time.time() - wta_time
 

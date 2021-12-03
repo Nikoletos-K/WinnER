@@ -21,11 +21,11 @@ def SpaceVisualization2D(X, prototypes, withPlotly=True, withText=False, decompo
     if withPlotly:
         prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
         df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "prototypes": prototypes})
-        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes')
+        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes', template='plotly_white')
         fig.update_traces(marker_size=8, marker_coloraxis=None)
         fig.show()
     else:
-        fig, _ = plt.subplots(figsize=(12,8))
+        fig, _ = plt.subplots(figsize=(14,8))
         title='2D Space Visualization with ' + decompositionMenthod
         fig.suptitle(title,fontsize=10,fontweight="bold")
         
@@ -56,7 +56,20 @@ def SpaceVisualization3D(X, prototypes, withText=False, withPlotly=True, decompo
     if withPlotly:
         prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
         df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "third_component": third_component, "prototypes": prototypes})
-        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='prototypes')
+        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='prototypes', size_max=2, opacity=0.8, template='plotly_white')
+        # fig = go.Figure(data=[go.Scatter3d(
+        #     x=first_component,
+        #     y=second_component,
+        #     z=third_component,
+        #     mode='markers',
+        #     marker=dict(
+        #         size=8,
+        #         color=third_component,                # set color to an array/list of desired values
+        #         colorscale='Viridis',   # choose a colorscale
+        #         opacity=0.8
+        #     )
+        # )])
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
         fig.show()
     else:
         fig = plt.figure(figsize=(12,10))
@@ -90,7 +103,11 @@ def SpaceVisualizationEmbeddings2D(X, prototypes, labels, withPlotly=True, withg
     first_component, second_component = components[:, 0], components[:, 1]
 
     if withPlotly:
-        print("")
+        prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
+        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "prototypes": prototypes})
+        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes',color_discrete_map={'1': 'lightcyan', '0': 'darkblue'}, template='plotly_white')
+        fig.update_traces(marker_size=8, marker_coloraxis=None)
+        fig.show()
     else:
         title= '2D Space Visualization with ' + decompositionMenthod
         fig, ax = plt.subplots(figsize=(12,10))
@@ -131,7 +148,10 @@ def SpaceVisualizationEmbeddings3D(X, prototypes, labels, withPlotly=True, withg
     first_component, second_component, third_component = components[:, 0], components[:, 1], components[:, 2]
 
     if withPlotly:
-        print("")
+        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "third_component": third_component, "labels": groundruth})
+        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='labels', size_max=2, opacity=0.8, template='plotly_white')
+        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
+        fig.show()
     else:
         fig = plt.figure(figsize=(12,10))
         ax = fig.add_subplot(111, projection='3d')
