@@ -19,10 +19,22 @@ def SpaceVisualization2D(X, prototypes, withPlotly=True, withText=False, decompo
     first_component, second_component = components[:, 0], components[:, 1]    
 
     if withPlotly:
-        prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
+        prototypes = [ '1' if i in prototypes else '0' for i in range(0,len(first_component),1)]
         df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "prototypes": prototypes})
-        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes', template='plotly_white')
-        fig.update_traces(marker_size=8, marker_coloraxis=None)
+        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes',opacity=0.8, template='plotly_white',symbol_sequence= ['circle','circle-open'],color_discrete_sequence = ['darkblue', 'lightblue'],
+            labels={
+                     "first_component": "First component",
+                     "second_component": "Second component",
+                     "labels": "is Prototype"
+            }
+        )        
+        fig.update_layout(
+            title = {
+                'text':  "2D Space Visualization with " + decompositionMenthod + " - Prototype Selection ",
+                'y':0.9, 'x':0.5,
+                'xanchor': 'center', 'yanchor': 'top'
+            }
+        )
         fig.show()
     else:
         fig, _ = plt.subplots(figsize=(14,8))
@@ -54,22 +66,24 @@ def SpaceVisualization3D(X, prototypes, withText=False, withPlotly=True, decompo
     first_component, second_component, third_component = components[:, 0], components[:, 1], components[:, 2] 
     
     if withPlotly:
-        prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
+        prototypes = [ '1' if i in prototypes else '0' for i in range(0,len(first_component),1)]
         df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "third_component": third_component, "prototypes": prototypes})
-        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='prototypes', size_max=2, opacity=0.8, template='plotly_white')
-        # fig = go.Figure(data=[go.Scatter3d(
-        #     x=first_component,
-        #     y=second_component,
-        #     z=third_component,
-        #     mode='markers',
-        #     marker=dict(
-        #         size=8,
-        #         color=third_component,                # set color to an array/list of desired values
-        #         colorscale='Viridis',   # choose a colorscale
-        #         opacity=0.8
-        #     )
-        # )])
-        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
+        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='prototypes', opacity=0.6, template='plotly_white',symbol_sequence= ['circle','circle-open'],color_discrete_sequence = ['darkblue', 'lightblue'],
+            labels={
+                     "first_component": "First component",
+                     "second_component": "Second component",
+                     "second_component": "Third component",
+                     "labels": "is Prototype"
+            }
+        )        
+        fig.update_layout(
+            title = {
+                'text':  "3D Space Visualization with " + decompositionMenthod + " - Prototype Selection ",
+                'y':0.9, 'x':0.5,
+                'xanchor': 'center', 'yanchor': 'top'
+            }, margin=dict(l=0, r=0, b=0, t=0)
+        )
+        fig.update_traces(marker=dict(size=3))
         fig.show()
     else:
         fig = plt.figure(figsize=(12,10))
@@ -84,15 +98,13 @@ def SpaceVisualization3D(X, prototypes, withText=False, withPlotly=True, decompo
                 if i in prototypes:
                     ax.scatter(x0, y0, z0, color='r', s=250, marker='*', alpha=1.0)
                 else:
-                    ax.scatter(x0, y0, z0, color='b', s=80, marker='.', alpha=1.0)
-                    
+                    ax.scatter(x0, y0, z0, color='b', s=80, marker='.', alpha=1.0)                    
         ax.set_xlabel("First component")
         ax.set_ylabel("Second component")
         ax.set_zlabel("Third component")
-
         plt.show()
         
-def SpaceVisualizationEmbeddings2D(X, prototypes, labels, withPlotly=True, withgroundruth=False, groundruth=None, decompositionMenthod='PCA'):
+def SpaceVisualizationEmbeddings2D(X, labels, withPlotly=True, decompositionMenthod='PCA'):
 
     if decompositionMenthod == 'PCA':
         decompositionComponents = PCA(n_components=2)
@@ -103,41 +115,31 @@ def SpaceVisualizationEmbeddings2D(X, prototypes, labels, withPlotly=True, withg
     first_component, second_component = components[:, 0], components[:, 1]
 
     if withPlotly:
-        prototypes = [ 1 if i in prototypes else 0 for i in range(0,len(first_component),1)]
-        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "prototypes": prototypes})
-        fig = px.scatter(df, x="first_component", y="second_component", color="prototypes",symbol='prototypes',color_discrete_map={'1': 'lightcyan', '0': 'darkblue'}, template='plotly_white')
-        fig.update_traces(marker_size=8, marker_coloraxis=None)
+        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "labels": labels})
+        fig = px.scatter(df, x="first_component", y="second_component", color="labels", opacity=0.8, template='plotly_white',
+                labels={
+                     "first_component": "First component",
+                     "second_component": "Second component",
+                     "labels": "Groups"
+                 }
+        )        
+        fig.update_layout(
+            title = {
+                'text':  "2D Space Visualization with " + decompositionMenthod + " from the Embeddings",
+                'y':0.9, 'x':0.5,
+                'xanchor': 'center', 'yanchor': 'top'
+            }
+        )
         fig.show()
     else:
         title= '2D Space Visualization with ' + decompositionMenthod
         fig, ax = plt.subplots(figsize=(12,10))
         cm = plt.get_cmap('jet') 
-        
-        if not withgroundruth:
-            labels = [",".join(item) for item in labels.astype(str)]
-            mydict={}
-            i = 0
-            for item in labels:
-                if(i>0 and item in mydict):
-                    continue
-                else:    
-                    i = i+1
-                    mydict[item] = i
-            k=[]
-            for item in labels:
-                k.append(mydict[item])
-        else:
-            k=groundruth
-        ax.scatter(first_component, second_component, c = k, cmap=cm, s=30) 
+        ax.scatter(first_component, second_component, c = labels, cmap=cm, s=30) 
         fig.suptitle(title,fontsize=15,fontweight="bold")
-        
-        if not withgroundruth:
-            for x0, y0, i in zip(first_component, second_component,range(0,len(first_component),1)):
-                if i in set(prototypes):
-                    plt.scatter(x0,y0,c='red',s=400,marker='*',alpha=0.2)
         plt.show()
 
-def SpaceVisualizationEmbeddings3D(X, prototypes, labels, withPlotly=True, withgroundruth=False, groundruth=None, decompositionMenthod='PCA'):
+def SpaceVisualizationEmbeddings3D(X, labels, withPlotly=True, decompositionMenthod='PCA'):
     
     if decompositionMenthod == 'PCA':
         decompositionComponents = PCA(n_components=3)
@@ -148,45 +150,35 @@ def SpaceVisualizationEmbeddings3D(X, prototypes, labels, withPlotly=True, withg
     first_component, second_component, third_component = components[:, 0], components[:, 1], components[:, 2]
 
     if withPlotly:
-        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "third_component": third_component, "labels": groundruth})
-        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='labels', size_max=2, opacity=0.8, template='plotly_white')
-        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
+        df = pd.DataFrame({"first_component": first_component, "second_component": second_component, "third_component": third_component, "labels": labels})
+        fig = px.scatter_3d(df, x='first_component', y='second_component', z='third_component',  color='labels', opacity=0.7, template='plotly_white',
+            labels={
+                     "first_component": "First component",
+                     "second_component": "Second component",
+                     "second_component": "Third component",
+                     "labels": "Groups"
+            }
+        )        
+        fig.update_layout(
+            title = {
+                'text':  "3D Space Visualization with " + decompositionMenthod  + " from the Embeddings",
+                'y':0.9, 'x':0.5,
+                'xanchor': 'center', 'yanchor': 'top'
+            }, margin=dict(l=0, r=0, b=0, t=0)
+        )
+        fig.update_traces(marker=dict(size=4))
         fig.show()
     else:
         fig = plt.figure(figsize=(12,10))
         ax = fig.add_subplot(111, projection='3d')
         cm = plt.get_cmap('jet') 
         title='3D Space Visualization from Embeddings with ' + decompositionMenthod
-        
+
         if decompositionMenthod == 'PCA':
             print("Explained varianse of PCA:", decompositionComponents.explained_variance_ratio_)
-
-        if not withgroundruth:
-            labels = [",".join(item) for item in labels.astype(str)]
-            mydict={}
-            i = 0
-            for item in labels:
-                if(i>0 and item in mydict):
-                    continue
-                else:    
-                    i = i+1
-                    mydict[item] = i
-            k=[]
-            for item in labels:
-                k.append(mydict[item])
-        else:
-            k=groundruth
-
-        ax.scatter(first_component, second_component, third_component, c = k, cmap=cm, s=30) 
+        ax.scatter(first_component, second_component, third_component, c = labels, cmap=cm, s=30) 
         fig.suptitle(title,fontsize=15,fontweight="bold")
-        
-        if not withgroundruth:
-            for x0, y0, z0, i in zip(first_component, second_component, third_component, range(0,len(first_component),1)):
-                if i in set(prototypes):
-                    ax.scatter(x0,y0,z0,c='red',s=400,marker='*',alpha=0.2)
-                    
         ax.set_xlabel("First component")
         ax.set_ylabel("Second component")
         ax.set_zlabel("Third component")
-
         plt.show()
