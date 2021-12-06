@@ -76,7 +76,6 @@ class RankedWTAHash:
         self.labels_groundTruth = labels_groundTruth
         self.true_matrix = true_matrix
 
-
     def fit(self, X):
         """
           Fit the classifier from the training dataset.
@@ -249,7 +248,7 @@ class RankedWTAHash:
             else:
                 warnings.warn("Available metrics for space creation: edit, jaccard ")
 
-            self.pairDictionary[(str2,str1)] = self.pairDictionary[(str1,str2)] = distance
+            self.pairDictionary[frozenset([str2,str1])] = distance
             
             if self.verboseLevel > 2:
                 print(distance)
