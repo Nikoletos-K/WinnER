@@ -9,7 +9,7 @@ from tqdm.notebook import tqdm as tqdm
 
 class WTA:
     
-    def __init__(self, K, number_of_permutations, m, disableTqdm=False):
+    def __init__(self, K, number_of_permutations, m=1, disableTqdm=False):
         
         self.K = K
         self.number_of_permutations = number_of_permutations

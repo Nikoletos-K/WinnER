@@ -40,9 +40,9 @@ class RankedWTAHash:
     def __init__(self, max_numberOf_clusters, max_dissimilarityDistance, windowSize, 
                  number_of_permutations=1, min_numOfNodes = 2, jaccard_withchars =True,
                  distanceMetricEmbedding = 'euclidean', metric = 'kendal', similarityVectors='ranked', 
-                 distanceMetric = 'edit', prototypesFilterThr = None, ngramms = None, 
+                 distanceMetric = 'jaccard', prototypesFilterThr = None, ngramms = None, 
                  similarityThreshold = None, maxOnly = None, earlyStop=0, 
-                 verboseLevel=0, rbo_p = 0.7, wtaM = 1, disableTqdm = False):
+                 verboseLevel=0, rbo_p = 0.7, wtaM = 1, maxNumberOfComparisons = 250000, disableTqdm = False):
         '''
           Constructor
         '''
@@ -69,6 +69,7 @@ class RankedWTAHash:
         self.verboseLevel = verboseLevel
         self.rbo_p = rbo_p
         self.wtaM = wtaM
+        self.MAX_NUMBER_OF_COMPARISONS = maxNumberOfComparisons
         self.disableTqdm = disableTqdm
 
     def hackForDebug(self, labels_groundTruth, true_matrix):
@@ -98,10 +99,10 @@ class RankedWTAHash:
 
         self.initialS_set = np.array(input_strings,dtype=object)
         self.S_set = np.array(input_strings,dtype=object)
-        if self.distanceMetric == 'jaccard' and self.jaccard_withchars == False:
+        if (self.distanceMetric == 'jaccard' or self.distanceMetric == 'euclid_jaccard') and self.jaccard_withchars == False:
             for i in range(0,len(input_strings)):
                 self.S_set[i] = set(nltk.ngrams(nltk.word_tokenize(self.S_set[i]), n=self.ngramms))
-        elif self.distanceMetric == 'jaccard' and self.jaccard_withchars == True:
+        elif (self.distanceMetric == 'jaccard' or self.distanceMetric == 'euclid_jaccard') and self.jaccard_withchars == True:
             for i in range(0,len(input_strings)):
                 self.S_set[i] = set(nltk.ngrams(self.S_set[i], n=self.ngramms))
 
@@ -243,8 +244,11 @@ class RankedWTAHash:
                 distance = editdistance.eval(self.S_set[str1],self.S_set[str2])
             elif self.distanceMetric == 'jaccard':
                 distance = jaccard_distance(self.S_set[str1],self.S_set[str2])
+            elif self.distanceMetric == 'euclid_jaccard':
+                distance = math.sqrt(jaccard_distance(self.S_set[str1],self.S_set[str2]))                
             else:
                 warnings.warn("Available metrics for space creation: edit, jaccard ")
+
             self.pairDictionary[(str2,str1)] = self.pairDictionary[(str1,str2)] = distance
             
             if self.verboseLevel > 2:
@@ -441,7 +445,7 @@ class RankedWTAHash:
         elif self.distanceMetricEmbedding == 'jaccard':
             return jaccard_distance(self.S_set[S[s]],self.S_set[VantageObjects[p]])
         elif self.distanceMetricEmbedding == 'euclid_jaccard':
-            return self.hybrid_euclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
+            return self.hybridEuclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
         else:
             warnings.warn("Available metrics: edit,jaccard,l_inf")
 
@@ -467,7 +471,7 @@ class RankedWTAHash:
                     
         return max_distance
     
-    def hybrid_euclidJaccard(self,s,p): 
+    def hybridEuclidJaccard(self,s,p): 
         return math.sqrt(jaccard_distance(s,p))
     
     #####################################################################
@@ -502,12 +506,12 @@ class RankedWTAHash:
                 for i_index in range(v_index+1,numOfVectors,1):
                     i_vector_id = bucket_vectors[i_index]
                     if vectorDim == 1:
-                        warnings.warn("Vector dim equal to 1- Setting metric to kendalltau")
+                        warnings.warn("Vector dim equal to 1 -> Setting kendall tau as metric")
                         metric = 'kendal'
                     
                     self.numOfComparisons+=1
 
-                    if self.numOfComparisons >= 250000:
+                    if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
                         return None, None
                     
                     if metric == None or metric == 'kendal':  # Simple Kendal tau metric
@@ -616,7 +620,6 @@ def report(model):
     print("Number of buckets created ", len(model.buckets.keys()))
     for key in model.buckets.keys():
         print(key," -> ", len(model.buckets[key]))
-        
     print("\n> 4. Similarity checking\n")
     print("Total comparisons: ", model.numOfComparisons)
     print(" -> between same objects: ", model.sameObjectsCompared )
@@ -660,37 +663,36 @@ def customClassificationReport(predicted_matrix, true_matrix):
 
 def set_params(params_dict):
 
-    max_numberOf_clusters = params_dict["max_numberOf_clusters"]
-    max_dissimilarityDistance = params_dict["max_dissimilarityDistance"]
-    windowSize = params_dict["windowSize"]
-    similarityThreshold = params_dict["similarityThreshold"]
-    metric = params_dict["metric"]
-    similarityVectors = params_dict["similarityVectors"]
-    number_of_permutations = params_dict["number_of_permutations"]
-    distanceMetric = params_dict["distanceMetric"]
-    distanceMetricEmbedding = params_dict["distanceMetricEmbedding"]
-    ngramms = params_dict["ngramms"]
-    jaccard_withchars =  params_dict["jaccard_withchars"]
-    prototypesFilterThr = params_dict["prototypesFilterThr"]
+    # max_numberOf_clusters = params_dict["max_numberOf_clusters"]
+    # max_dissimilarityDistance = params_dict["max_dissimilarityDistance"]
+    # windowSize = params_dict["windowSize"]
+    # similarityThreshold = params_dict["similarityThreshold"]
+    # metric = params_dict["metric"]
+    # similarityVectors = params_dict["similarityVectors"]
+    # number_of_permutations = params_dict["number_of_permutations"]
+    # distanceMetric = params_dict["distanceMetric"]
+    # distanceMetricEmbedding = params_dict["distanceMetricEmbedding"]
+    # ngramms = params_dict["ngramms"]
+    # ngramms = params_dict["ngramms"]
+    # jaccard_withchars =  params_dict["jaccard_withchars"]
+    # prototypesFilterThr = params_dict["prototypesFilterThr"]
     # rbo_p = params_dict["rbo_p"]
-    wtaM = params_dict["wtaM"]
+    # wtaM = params_dict["wtaM"]
 
-    modelCreated = RankedWTAHash(
-        max_numberOf_clusters= max_numberOf_clusters,
-        max_dissimilarityDistance= max_dissimilarityDistance,
-        windowSize= windowSize,
-        similarityThreshold= similarityThreshold,
-        metric=metric,
-        similarityVectors=similarityVectors,
-        number_of_permutations = number_of_permutations,
-        distanceMetric= distanceMetric,
-        distanceMetricEmbedding = distanceMetricEmbedding,
-        ngramms= ngramms,
-        jaccard_withchars = jaccard_withchars,
-        prototypesFilterThr = prototypesFilterThr,
-        verboseLevel = 0,
+    return RankedWTAHash(
+        max_numberOf_clusters = params_dict["max_numberOf_clusters"],
+        max_dissimilarityDistance = params_dict["max_dissimilarityDistance"],
+        windowSize = params_dict["windowSize"],
+        similarityThreshold = params_dict["similarityThreshold"],
+        metric = params_dict["metric"],
+        similarityVectors = params_dict["similarityVectors"],
+        number_of_permutations = params_dict["number_of_permutations"],
+        distanceMetric = params_dict["distanceMetric"],
+        distanceMetricEmbedding = params_dict["distanceMetricEmbedding"],
+        ngramms = params_dict["ngramms"],
+        jaccard_withchars = params_dict["jaccard_withchars"],
+        prototypesFilterThr = params_dict["prototypesFilterThr"],
+        verboseLevel = 0
         # rbo_p = rbo_p,
-        wtaM = wtaM
+        # wtaM = wtaM
     )
-
-    return modelCreated
