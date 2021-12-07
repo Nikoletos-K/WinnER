@@ -184,9 +184,9 @@ class RankedWTAHash:
 
         if self.verboseLevel > 0:
             if self.similarityVectors == 'ranked':
-                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
+                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.HashedClusters)
             elif self.similarityVectors == 'initial':
-                SpaceVisualizationEmbeddings3D(self.Embeddings, self.prototypeArray, self.HashedClusters, withgroundruth=True, groundruth = self.labels_groundTruth, title='PCA visualization GroundTruth')
+                SpaceVisualizationEmbeddings3D(self.Embeddings, self.HashedClusters)
 
         wta_time = time.time() - wta_time
 
