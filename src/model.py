@@ -8,7 +8,11 @@ import time
 import warnings
 import nltk
 import math
+import bloom_filter
+import multiprocessing
+import numba
 
+from joblib import Parallel, delayed
 from tqdm.notebook import tqdm as tqdm
 from scipy.spatial.distance import hamming
 from scipy.stats._stats import _kendall_dis
@@ -19,7 +23,8 @@ from sklearn.metrics import jaccard_score, accuracy_score, f1_score, recall_scor
 from scipy import stats 
 from scipy.spatial.distance import hamming,jaccard
 from sklearn.metrics import ndcg_score
-
+from bloom_filter import BloomFilter
+from cantor import q_encode
 
 # --------------------------------- #
 # ---- Import from local files ---- #
@@ -71,6 +76,7 @@ class RankedWTAHash:
         self.wtaM = wtaM
         self.MAX_NUMBER_OF_COMPARISONS = maxNumberOfComparisons
         self.disableTqdm = disableTqdm
+        
 
     def hackForDebug(self, labels_groundTruth, true_matrix):
         self.labels_groundTruth = labels_groundTruth
@@ -96,6 +102,7 @@ class RankedWTAHash:
         else:
             input_strings = list(X)
 
+        inputSize = len(input_strings)
         self.initialS_set = np.array(input_strings,dtype=object)
         self.S_set = np.array(input_strings,dtype=object)
         if (self.distanceMetric == 'jaccard' or self.distanceMetric == 'euclid_jaccard') and self.jaccard_withchars == False:
@@ -106,7 +113,8 @@ class RankedWTAHash:
                 self.S_set[i] = set(nltk.ngrams(self.S_set[i], n=self.ngramms))
 
         self.S_index = np.arange(0,len(input_strings),1)
-        
+        self.bloomFilterMaxElemnets = inputSize*inputSize
+
         if self.verboseLevel > 1:
             print("\n\nString positions are:")
             print(self.S_index)
@@ -120,7 +128,7 @@ class RankedWTAHash:
         self.prototypeArray,self.selected_numOfPrototypes = self.Clustering_Prototypes(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance, self.pairDictionary)
         self.embeddingDim = self.prototypeArray.size
         
-        if self.verboseLevel > 0:
+        if self.verboseLevel > 1:
             print("\n- Prototypes selected:")
             print(self.prototypeArray)
             heatmapData = []
@@ -140,17 +148,13 @@ class RankedWTAHash:
         if self.earlyStop==1:
             return self
 
-        if self.verboseLevel >=0 :
+        if self.verboseLevel >= 0:
             print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
             print("\n-> Creating Embeddings:")
         embeddings_time = time.time()
         self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray, self.pairDictionary)
-   
-        if self.verboseLevel >=0 :
-            print("- Embeddings created")
        
         if self.verboseLevel > 0:
-            print(self.Embeddings)
             SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
         
         embeddings_time = time.time() - embeddings_time
@@ -170,7 +174,7 @@ class RankedWTAHash:
         wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM, self.disableTqdm)
         self.HashedClusters, self.buckets, self.rankedVectors = wta.fit(self.Embeddings)
         
-        if self.verboseLevel > 0:
+        if self.verboseLevel > 1:
             print("- WTA buckets: ")
             for key in self.buckets.keys():
                 print(key," -> ",self.buckets[key])
@@ -184,9 +188,9 @@ class RankedWTAHash:
 
         if self.verboseLevel > 0:
             if self.similarityVectors == 'ranked':
-                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.HashedClusters)
+                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_groundTruth)
             elif self.similarityVectors == 'initial':
-                SpaceVisualizationEmbeddings3D(self.Embeddings, self.HashedClusters)
+                SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
 
         wta_time = time.time() - wta_time
 
@@ -219,9 +223,9 @@ class RankedWTAHash:
         
         if self.verboseLevel > 0:
             print("\n- Total number of comparisons made: ", self.numOfComparisons)
-            print("\n- Total number of comparisons of same objects: ", self.sameObjectsCompared)
-            print("\n- Total number of comparisons of same objects with success: ", self.sameObjectsComparedSuccess)
-            print("\n- Total number of comparisons of different objects with success: ", self.diffObjectsComparedSuccess)
+            print("- Total number of comparisons of same objects: ", self.sameObjectsCompared)
+            print("- Total number of comparisons of same objects with success: ", self.sameObjectsComparedSuccess)
+            print("- Total number of comparisons of different objects with success: ", self.diffObjectsComparedSuccess)
         
         similarity_time = time.time() - similarity_time
 
@@ -231,13 +235,13 @@ class RankedWTAHash:
 
         return self
 
-    def dissimilarityDistance(self, str1,str2,verbose=False):
+    def dissimilarityDistance(self, str1, str2, verbose=False):
         if self.verboseLevel > 2:
             print("-> ", self.initialS_set[str1])
             print("--> ", self.initialS_set[str2])
 
-        if ((str1,str2) or (str2,str1))  in self.pairDictionary.keys():
-            return self.pairDictionary[(str1,str2)]
+        if frozenset([str1,str2]) in self.pairDictionary.keys():
+            return self.pairDictionary[frozenset([str1,str2])]
         else:
             if self.distanceMetric == 'edit':
                 distance = editdistance.eval(self.S_set[str1],self.S_set[str2])
@@ -246,9 +250,9 @@ class RankedWTAHash:
             elif self.distanceMetric == 'euclid_jaccard':
                 distance = math.sqrt(jaccard_distance(self.S_set[str1],self.S_set[str2]))                
             else:
-                warnings.warn("Available metrics for space creation: edit, jaccard ")
+                warnings.warn("Available metrics for space creation: edit, jaccard, euclid_jaccard ")
 
-            self.pairDictionary[frozenset([str2,str1])] = distance
+            self.pairDictionary[frozenset([str1,str2])] = distance
             
             if self.verboseLevel > 2:
                 print(distance)
@@ -277,7 +281,7 @@ class RankedWTAHash:
 
         Clusters = [ [] for l in range(0,k)]
 
-        for i in tqdm(range(0,S.size,1), desc="Prototype selection", disable = self.disableTqdm, dynamic_ncols = True):     # String-clustering phase, for all strings
+        for i in tqdm(range(0,S.size,1), desc="Representatives selection", disable = self.disableTqdm, dynamic_ncols = True):     # String-clustering phase, for all strings
             while j < k :       # iteration through clusters, for all clusters
                 if r[0][j] == None:      # case empty first representative for cluster j
                     r[0][j] = S[i]   # init cluster representative with string i
@@ -323,7 +327,7 @@ class RankedWTAHash:
 
         new_numofClusters = k
         prototype_index = 0
-        for j in range(0,k,1):
+        for j in tqdm(range(0,k,1), desc="Prototype selcetion", disable = self.disableTqdm, dynamic_ncols = True):
             
             apprxDistances = self.ApproximatedProjectionDistancesofCluster(r[1][j], r[0][j], j, Clusters[j], pairDictionary)
             
@@ -388,7 +392,7 @@ class RankedWTAHash:
     def OptimizeClusterSelection(self,Prototypes,numOfPrototypes):
 
         notwantedPrototypes = []
-        for pr_1 in range(0,numOfPrototypes):
+        for pr_1 in tqdm(range(0,numOfPrototypes), desc="Prototype optimization", disable = self.disableTqdm, dynamic_ncols = True):
             for pr_2 in range(pr_1+1,numOfPrototypes):
                 if self.dissimilarityDistance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypesFilterThr:
                     notwantedPrototypes.append(Prototypes[pr_2])
@@ -476,8 +480,8 @@ class RankedWTAHash:
     #####################################################################
     #                 3. Similarity checking                            #
     #####################################################################
-
-    def SimilarityEvaluation(self, buckets,vectors,threshold,maxOnly=None,metric=None):
+    # @numba.njit
+    def SimilarityEvaluation(self, buckets, vectors, threshold, maxOnly=None, metric=None):
 
         numOfVectors = vectors.shape[0]
         vectorDim    = vectors.shape[1]
@@ -489,21 +493,33 @@ class RankedWTAHash:
         self.diffObjectsComparedSuccess = 0
         self.sameObjectsCompared = 0
         self.sameObjectsComparedSuccess = 0
-        
+        self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
         # Loop for every bucket
         for bucketid in tqdm(buckets.keys(), desc="Similarity checking", disable = self.disableTqdm, dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
+
+            if isinstance(bucket_vectors, set):
+                bucket_vectors = list(bucket_vectors)
+
             numOfVectors = len(bucket_vectors)
             
-            if self.verboseLevel > 0:
+            if self.verboseLevel > 1:
                 print(bucket_vectors)
             
             # For every vector inside the bucket
             for v_index in range(0,numOfVectors,1):
                 v_vector_id = bucket_vectors[v_index]
+
                 # Loop to all the other
                 for i_index in range(v_index+1,numOfVectors,1):
                     i_vector_id = bucket_vectors[i_index]
+
+                    cantor_unique_index = q_encode(v_vector_id, i_vector_id)
+                    if cantor_unique_index in self.bloomFilter:
+                        continue
+                    else:
+                        self.bloomFilter.add(cantor_unique_index)
+
                     if vectorDim == 1:
                         warnings.warn("Vector dim equal to 1 -> Setting kendall tau as metric")
                         metric = 'kendal'

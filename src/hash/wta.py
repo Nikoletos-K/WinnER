@@ -28,7 +28,6 @@ class WTA:
 
         newVectors = []
         buckets = dict()
-
         numOfVectors = vectors.shape[0]
         vectorDim    = vectors.shape[1]
 
@@ -36,16 +35,15 @@ class WTA:
             self.K = vectorDim
             warnings.warn("Window size greater than vector dimension")
 
-        C = np.empty([numOfVectors], dtype=np.object)
-
-        permutation_dimension = vectorDim
+        C = np.zeros([self.number_of_permutations * numOfVectors], dtype=int)
+        i=0;
         for permutation_index in tqdm(range(0,self.number_of_permutations,1), desc="WTA hashing", dynamic_ncols = True, disable = self.disableTqdm):
 
             # randomization is without replacement and has to be consistent 
             # across all samples and hence the notion of permutations
-            theta = np.random.permutation(permutation_dimension) 
+            theta = np.random.permutation(vectorDim) 
 
-            i=0;j=0;
+            j=0;
             for v_index in range(0,numOfVectors,1):
                 if permutation_index == 0:
                     X_new = self.permuted(vectors[v_index],theta)
@@ -55,26 +53,27 @@ class WTA:
                     newVectors[v_index] = X_new
 
                 # C[i] = np.argsort(X_new[:self.K])[-self.m:].tolist()
-                C[i] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
-                i+=1
+                # C[i] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
+                if permutation_index % 2 == 0: 
+                    C[i*numOfVectors + j] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
+                else:
+                    C[i*numOfVectors + j] = min(range(len(X_new[-self.K:])), key=X_new[-self.K:].__getitem__)
+                    
+                self.bucketInsert(buckets, str(str(C[i*numOfVectors + j])+"-"+str(i)), v_index)
+                j+=1;
+            i+=1;
 
-            
-        for c, i in zip(C, range(0, numOfVectors, 1)):
-            buckets = self.bucketInsert(buckets, str(c), i)
 
         return C, buckets, np.array(newVectors,dtype=np.intp)
 
     def permuted(self, vector, permutation):
         permuted_vector = [vector[x] for x in permutation]
-
         return permuted_vector
 
-    def bucketInsert(self, buckets, bucket_id, item):
-        if bucket_id not in buckets.keys():
-            buckets[bucket_id] = []
-
-        buckets[bucket_id].append(item)
-
+    def bucketInsert(self, buckets, hashCode, value):
+        if hashCode not in buckets.keys():
+            buckets[hashCode] = set()
+        buckets[hashCode].add(value)
         return buckets
     
 def wtaSimilarity(vector1, vector2):
