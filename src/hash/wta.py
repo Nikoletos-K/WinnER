@@ -54,6 +54,7 @@ class WTA:
 
                 # C[i] = np.argsort(X_new[:self.K])[-self.m:].tolist()
                 # C[i] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
+                # C[i*numOfVectors + j] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
                 if permutation_index % 2 == 0: 
                     C[i*numOfVectors + j] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
                 else:

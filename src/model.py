@@ -592,7 +592,7 @@ class RankedWTAHash:
     #                          Evaluation                               # 
     #####################################################################
 
-    def evaluate(self, predicted_matrix, true_matrix, with_classification_report=False, with_confusion_matrix=False, with_detailed_report=False):
+    def evaluate(self, predicted_matrix, true_matrix, with_classification_report=False, with_confusion_matrix=True, with_detailed_report=False):
         
         if self.verboseLevel >= 0:
             print("#####################################################################\n#                          Evaluation                               #\n#####################################################################\n")
