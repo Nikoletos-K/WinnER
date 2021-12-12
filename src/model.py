@@ -11,6 +11,7 @@ import math
 import bloom_filter
 import multiprocessing
 import numba
+import threading
 
 from joblib import Parallel, delayed
 from tqdm.notebook import tqdm as tqdm
@@ -222,10 +223,11 @@ class RankedWTAHash:
             print(self.mapping_matrix)
         
         if self.verboseLevel > 0:
-            print("\n- Total number of comparisons made: ", self.numOfComparisons)
-            print("- Total number of comparisons of same objects: ", self.sameObjectsCompared)
-            print("- Total number of comparisons of same objects with success: ", self.sameObjectsComparedSuccess)
-            print("- Total number of comparisons of different objects with success: ", self.diffObjectsComparedSuccess)
+            print("Total comparisons: ", self.numOfComparisons)
+            print(" -> between same objects: ", self.sameObjectsCompared )
+            print(" -> between same objects with success: ", self.sameObjectsComparedSuccess)
+            print(" -> between different objects: ", self.difObjectsCompared)
+            print(" -> between different objects with success: ", self.diffObjectsComparedSuccess)
         
         similarity_time = time.time() - similarity_time
 
@@ -480,7 +482,6 @@ class RankedWTAHash:
     #####################################################################
     #                 3. Similarity checking                            #
     #####################################################################
-    # @numba.njit
     def SimilarityEvaluation(self, buckets, vectors, threshold, maxOnly=None, metric=None):
 
         numOfVectors = vectors.shape[0]
@@ -491,6 +492,7 @@ class RankedWTAHash:
         
         self.numOfComparisons = 0
         self.diffObjectsComparedSuccess = 0
+        self.difObjectsCompared = 0
         self.sameObjectsCompared = 0
         self.sameObjectsComparedSuccess = 0
         self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
@@ -527,7 +529,8 @@ class RankedWTAHash:
                     self.numOfComparisons+=1
 
                     if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
-                        return None, None
+                        warnings.warn("Upper bound of comparisons have been achieved")
+                        # return None, None
                     
                     if metric == None or metric == 'kendal':  # Simple Kendal tau metric
                         similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
@@ -571,6 +574,9 @@ class RankedWTAHash:
                     
                     if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
                         self.sameObjectsCompared += 1
+
+                    if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
+                        self.difObjectsCompared += 1
 
                     if similarity_prob > threshold:
                         if v_vector_id not in mapping.keys():
@@ -639,7 +645,8 @@ def report(model):
     print("Total comparisons: ", model.numOfComparisons)
     print(" -> between same objects: ", model.sameObjectsCompared )
     print(" -> between same objects with success: ", model.sameObjectsComparedSuccess)
-    print(" -> between different objects with success: ", model.diffObjectsComparedSuccess )
+    print(" -> between different objects: ", model.difObjectsCompared)
+    print(" -> between different objects with success: ", model.diffObjectsComparedSuccess)
     
 
 def customClassificationReport(predicted_matrix, true_matrix):
