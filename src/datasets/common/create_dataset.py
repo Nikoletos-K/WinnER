@@ -12,7 +12,7 @@ def createDataset(cora_dataframe, true_values, fields, id_column, keepNone = Fal
     sameEntities_dictionary = {}
 
     i=0
-    for _, row in tqdm(cora_dataframe.iterrows(), desc="Creating dataset from imput files", dynamic_ncols = True):
+    for _, row in tqdm(cora_dataframe.iterrows(), total = len(cora_dataframe), desc="Creating dataset from imput files", dynamic_ncols = True):
         index_to_id_dict[int(row[id_column])] = i
         rawStr = []
         for field in fields:
@@ -27,7 +27,7 @@ def createDataset(cora_dataframe, true_values, fields, id_column, keepNone = Fal
     num_of_records = len(cora_dataframe)
     trueValues_matrix = np.zeros([num_of_records,num_of_records],dtype=np.int8)
 
-    for _, row in tqdm(true_values.iterrows(), desc="Creating groundtruth matrix", dynamic_ncols = True):  
+    for _, row in tqdm(true_values.iterrows(), total = len(true_values), desc="Creating groundtruth matrix", dynamic_ncols = True):  
         trueValues_matrix[index_to_id_dict[row['id1']]][index_to_id_dict[row['id2']]] = 1
         trueValues_matrix[index_to_id_dict[row['id2']]][index_to_id_dict[row['id1']]] = 1
 

@@ -48,7 +48,7 @@ class RankedWTAHash:
                  number_of_permutations=1, min_numOfNodes = 2, jaccard_withchars =True,
                  distanceMetricEmbedding = 'euclidean', metric = 'kendal', similarityVectors='ranked', 
                  distanceMetric = 'jaccard', prototypesFilterThr = None, ngramms = None, 
-                 similarityThreshold = None, earlyStop=0, numOfThreads = 8,
+                 similarityThreshold = None, earlyStop=0, numOfThreads = 16,
                  verboseLevel=0, rbo_p = 0.7, wtaM = 1, maxNumberOfComparisons = 250000, disableTqdm = False):
         '''
           Constructor
@@ -141,7 +141,8 @@ class RankedWTAHash:
                 self.selectionVariance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
                 print("\n- Mean variance in prototype selection: ", self.selectionVariance)
 
-        prototypes_time = time.time() - prototypes_time
+        self.prototypes_time = time.time() - prototypes_time
+
         if self.verboseLevel >=0 :
             print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
             print("\n# Finished in %.6s secs" % (prototypes_time))
@@ -159,7 +160,7 @@ class RankedWTAHash:
         if self.verboseLevel > 0:
             SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
         
-        embeddings_time = time.time() - embeddings_time
+        self.embeddings_time = time.time() - embeddings_time
 
         if self.verboseLevel >=0 :
             print("\n# Finished in %.6s secs" % (embeddings_time))
@@ -194,7 +195,7 @@ class RankedWTAHash:
             elif self.similarityVectors == 'initial':
                 SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
 
-        wta_time = time.time() - wta_time
+        self.wta_time = time.time() - wta_time
 
         if self.verboseLevel >=0 :
             print("\n# Finished in %.6s secs" % (wta_time))
@@ -230,7 +231,7 @@ class RankedWTAHash:
             print(" -> between different objects: ", self.difObjectsCompared)
             print(" -> between different objects with success: ", self.diffObjectsComparedSuccess)
         
-        similarity_time = time.time() - similarity_time
+        self.similarity_time = time.time() - similarity_time
 
         if self.verboseLevel >=0 :
             print("\n# Finished in %.6s secs" % (similarity_time))
@@ -503,6 +504,7 @@ class RankedWTAHash:
                 else:
                     lock.acquire()
                     self.bloomFilter.add(cantor_unique_index)
+                    lock.release()
 
                 lock.acquire()
                 self.numOfComparisons += 1
@@ -589,9 +591,10 @@ class RankedWTAHash:
         self.numOfBuckets = len(buckets.keys())
         # Loop for every bucket
         lock = threading.Lock()
+        # lock = multiprocessing.Lock()
         thread_index = 0
         thread_pool = []
-        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disableTqdm, dynamic_ncols = True):
+        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disableTqdm, total = self.numOfBuckets,dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
 
             if isinstance(bucket_vectors, set):
@@ -601,16 +604,19 @@ class RankedWTAHash:
                 print(bucket_vectors)
 
             if  thread_index % self.numOfThreads == 0:
-                thread_pool = [t.start for t in thread_pool]            
-                thread_pool = [t.join for t in thread_pool]
+                [t.start() for t in thread_pool]            
+                [t.join() for t in thread_pool]
+                thread_pool = []
 
             thread_pool.append(threading.Thread(target = self.SimilarityEvaluationBucket,
                             args=(bucket_vectors, lock)))
-            thread_index += 1
 
+            # thread_pool.append(multiprocessing.Process(target = self.SimilarityEvaluationBucket,
+            #                 args=(bucket_vectors, lock)))
+        
         if self.numOfBuckets % self.numOfThreads != 0: 
-            thread_pool = [t.start for t in thread_pool]            
-            thread_pool = [t.join for t in thread_pool]
+            [t.start() for t in thread_pool]            
+            [t.join() for t in thread_pool]
 
         return self.mapping, np.triu(self.mapping_matrix)
 
@@ -787,23 +793,6 @@ def customClassificationReport(predicted_matrix, true_matrix):
     print("False negatives: ", false_negatives)
 
 def set_params(params_dict):
-
-    # max_numberOf_clusters = params_dict["max_numberOf_clusters"]
-    # max_dissimilarityDistance = params_dict["max_dissimilarityDistance"]
-    # windowSize = params_dict["windowSize"]
-    # similarityThreshold = params_dict["similarityThreshold"]
-    # metric = params_dict["metric"]
-    # similarityVectors = params_dict["similarityVectors"]
-    # number_of_permutations = params_dict["number_of_permutations"]
-    # distanceMetric = params_dict["distanceMetric"]
-    # distanceMetricEmbedding = params_dict["distanceMetricEmbedding"]
-    # ngramms = params_dict["ngramms"]
-    # ngramms = params_dict["ngramms"]
-    # jaccard_withchars =  params_dict["jaccard_withchars"]
-    # prototypesFilterThr = params_dict["prototypesFilterThr"]
-    # rbo_p = params_dict["rbo_p"]
-    # wtaM = params_dict["wtaM"]
-
     return RankedWTAHash(
         max_numberOf_clusters = params_dict["max_numberOf_clusters"],
         max_dissimilarityDistance = params_dict["max_dissimilarityDistance"],
@@ -818,6 +807,4 @@ def set_params(params_dict):
         jaccard_withchars = params_dict["jaccard_withchars"],
         prototypesFilterThr = params_dict["prototypesFilterThr"],
         verboseLevel = 0
-        # rbo_p = rbo_p,
-        # wtaM = wtaM
     )
