@@ -511,7 +511,7 @@ class RankedWTAHash:
                 lock.release()
 
                 if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
-                    warnings.warn("Upper bound of comparisons have been achieved")
+                    warnings.warn("Upper bound of comparisons has been achieved")
                     # return None, None
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
