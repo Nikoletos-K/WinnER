@@ -2,7 +2,7 @@ import numpy as np
 
 def myMMD2(model):    
     mmdOnPrototypes = MMD2(model.dissimilarityDistance, model.S_index, model.prototypeArray)
-    print("MMD2: ",mmdOnPrototypes)        
+    print("MMD2: ",mmdOnPrototypes)
         
         
 def MMD2(k, x, z):

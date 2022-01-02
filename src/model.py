@@ -127,7 +127,7 @@ class RankedWTAHash:
             print("\n-> Finding prototypes and representatives of each cluster:")
         
         prototypes_time = time.time()
-        self.prototypeArray,self.selected_numOfPrototypes = self.Clustering_Prototypes(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance, self.pairDictionary)
+        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance, self.pairDictionary)
         self.embeddingDim = self.prototypeArray.size
         
         if self.verboseLevel > 1:
@@ -268,14 +268,14 @@ class RankedWTAHash:
     #####################################################################
 
     '''
-    Clustering_Prototypes(S,k,d,r,C) 
+    PrototypeSelection(S,k,d,r,C) 
     The String Clustering and Prototype Selection Algorithm
     is the main clustering method, that takes as input the intial strings S, 
     the max number of clusters to be generated in k,
     the maximum allowable distance of a string to join a cluster in var d
     and returns the prototype for each cluster in array Prototype
     '''
-    def Clustering_Prototypes(self,S,k,d,pairDictionary,verbose=False):
+    def PrototypeSelection(self,S,k,d,pairDictionary,verbose=False):
 
         # ----------------- Initialization phase ----------------- #
         i = 0
@@ -333,7 +333,7 @@ class RankedWTAHash:
         prototype_index = 0
         for j in tqdm(range(0,k,1), desc="Prototype selcetion", disable = self.disableTqdm, dynamic_ncols = True):
             
-            apprxDistances = self.ApproximatedProjectionDistancesofCluster(r[1][j], r[0][j], j, Clusters[j], pairDictionary)
+            apprxDistances = self.ApproximatedProjectionDistancesofCluster(r[1][j], r[0][j], Clusters[j])
             
             if apprxDistances == None:
                 new_numofClusters-=1
@@ -350,7 +350,7 @@ class RankedWTAHash:
         return np.array(Prototypes), new_numofClusters
 
 
-    def ApproximatedProjectionDistancesofCluster(self, right_rep, left_rep, cluster_id, clusterSet, pairDictionary):
+    def ApproximatedProjectionDistancesofCluster(self, right_rep, left_rep, clusterSet):
 
         distances_vector = dict()
 
