@@ -127,7 +127,7 @@ class RankedWTAHash:
             print("\n-> Finding prototypes and representatives of each cluster:")
         
         prototypes_time = time.time()
-        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance, self.pairDictionary)
+        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance)
         self.embeddingDim = self.prototypeArray.size
         
         if self.verboseLevel > 1:
@@ -275,7 +275,7 @@ class RankedWTAHash:
     the maximum allowable distance of a string to join a cluster in var d
     and returns the prototype for each cluster in array Prototype
     '''
-    def PrototypeSelection(self,S,k,d,pairDictionary,verbose=False):
+    def PrototypeSelection(self,S,k,d):
 
         # ----------------- Initialization phase ----------------- #
         i = 0
