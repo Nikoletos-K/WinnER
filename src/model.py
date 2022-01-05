@@ -268,7 +268,7 @@ class RankedWTAHash:
     #####################################################################
 
     '''
-    PrototypeSelection(S,k,d,r,C) 
+    PrototypeSelection(S,k,d) 
     The String Clustering and Prototype Selection Algorithm
     is the main clustering method, that takes as input the intial strings S, 
     the max number of clusters to be generated in k,
@@ -307,9 +307,6 @@ class RankedWTAHash:
 
         # ----------------- Prototype selection phase ----------------- #
 
-        Projections = np.empty([k],dtype=object)
-        Prototypes = np.empty([k],dtype=int)
-        sortedProjections = np.empty([k],dtype=object)
         Projections = []
         Prototypes = []
         sortedProjections = []
@@ -366,7 +363,6 @@ class RankedWTAHash:
                         distances_vector[clusterSet[str_inCluster]] = 0
                     else:
                         distances_vector[clusterSet[str_inCluster]] = (right_rep_distance**2-rep_distance**2-left_rep_distance**2 ) / (2*rep_distance)
-
         else:
             if left_rep != None and right_rep == None:
                 distances_vector[left_rep] = left_rep
@@ -455,11 +451,6 @@ class RankedWTAHash:
             return self.hybridEuclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
         else:
             warnings.warn("Available metrics: edit,jaccard,l_inf")
-
-
-    def dropNone(array):
-        array = list(filter(None, list(array)))
-        return np.array(array)
     
     def l_inf(self,VantageObjects,S,s,p):
         max_distance = None
