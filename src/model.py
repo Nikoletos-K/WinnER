@@ -155,7 +155,7 @@ class RankedWTAHash:
             print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
             print("\n-> Creating Embeddings:")
         embeddings_time = time.time()
-        self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray, self.pairDictionary)
+        self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray)
        
         if self.verboseLevel > 0:
             SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
@@ -417,7 +417,7 @@ class RankedWTAHash:
     '''
     CreateVantageEmbeddings(S,VantageObjects): Main function for creating the string embeddings based on the Vantage Objects
     '''
-    def CreateVantageEmbeddings(self, S, VantageObjects, pairDictionary):
+    def CreateVantageEmbeddings(self, S, VantageObjects):
 
         # ------- Distance computing ------- #
         vectors = []
@@ -425,7 +425,7 @@ class RankedWTAHash:
             string_embedding = []
             for p in range(0,VantageObjects.size):
                 if VantageObjects[p] != None:
-                    string_embedding.append(self.DistanceMetric(s,p,S,VantageObjects, pairDictionary))
+                    string_embedding.append(self.DistanceMetric(s,p,S,VantageObjects, self.pairDictionary))
 
             # --- Ranking representation ---- #
             ranked_string_embedding = stats.rankdata(string_embedding, method='min')
@@ -439,7 +439,7 @@ class RankedWTAHash:
     '''
     DistanceMetric(s,p,S,Prototypes): Embedding method used for creating the space of objects
     '''
-    def DistanceMetric(self, s, p, S, VantageObjects, pairDictionary):
+    def DistanceMetric(self, s, p, S, VantageObjects):
 
         if self.distanceMetricEmbedding == 'l_inf':
             return self.l_inf(VantageObjects,S,s,p)
