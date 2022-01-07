@@ -211,9 +211,9 @@ class RankedWTAHash:
         similarity_time = time.time()
 
         if self.similarityVectors == 'ranked':
-            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors, self.similarityThreshold, metric=self.metric)
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors)
         elif self.similarityVectors == 'initial':
-            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings, self.similarityThreshold, metric=self.metric)
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
         else:
             warnings.warn("similarityVectors: Available options are: ranked,initial")
         
@@ -565,10 +565,9 @@ class RankedWTAHash:
                 lock.release()
 
 
-    def SimilarityEvaluation(self, buckets, vectors, threshold, metric=None):
+    def SimilarityEvaluation(self, buckets, vectors):
 
         numOfVectors = vectors.shape[0]
-        vectorDim    = vectors.shape[1]
         self.mapping_matrix = np.zeros([numOfVectors,numOfVectors],dtype=np.int8)
         self.similarityProb_matrix = np.empty([numOfVectors,numOfVectors],dtype=np.float)* np.nan
         self.mapping = {}
@@ -580,11 +579,14 @@ class RankedWTAHash:
         self.sameObjectsComparedSuccess = 0
         self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
         self.numOfBuckets = len(buckets.keys())
+
         # Loop for every bucket
         lock = threading.Lock()
         # lock = multiprocessing.Lock()
+        
         thread_index = 0
         thread_pool = []
+        
         for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disableTqdm, total = self.numOfBuckets,dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
 
@@ -611,87 +613,6 @@ class RankedWTAHash:
 
         return self.mapping, np.triu(self.mapping_matrix)
 
-    
-            # # For every vector inside the bucket
-            # for v_index in range(0,numOfVectors,1):
-            #     v_vector_id = bucket_vectors[v_index]
-
-            #     # Loop to all the other
-            #     for i_index in range(v_index+1,numOfVectors,1):
-            #         i_vector_id = bucket_vectors[i_index]
-
-            #         cantor_unique_index = q_encode(v_vector_id, i_vector_id)
-            #         if cantor_unique_index in self.bloomFilter:
-            #             continue
-            #         else:
-            #             self.bloomFilter.add(cantor_unique_index)
-
-            #         if vectorDim == 1:
-            #             warnings.warn("Vector dim equal to 1 -> Setting kendall tau as metric")
-            #             metric = 'kendal'
-                    
-            #         self.numOfComparisons+=1
-
-            #         if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
-            #             warnings.warn("Upper bound of comparisons have been achieved")
-            #             # return None, None
-                    
-            #         if metric == None or metric == 'kendal':  # Simple Kendal tau metric
-            #             similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'customKendal':  # Custom Kendal tau
-            #             numOf_discordant_pairs = _kendall_dis(vectors[v_vector_id].astype('intp'), vectors[i_vector_id].astype('intp'))
-            #             similarity_prob = (2*numOf_discordant_pairs) / (vectorDim*(vectorDim-1))
-            #         elif metric == 'jaccard':
-            #             similarity_prob = jaccard_score(vectors[v_vector_id], vectors[i_vector_id], average='micro')
-            #         elif metric == 'cosine':
-            #             similarity_prob = cosine_similarity(np.array(vectors[v_vector_id]).reshape(1, -1), np.array(vectors[i_vector_id]).reshape(1, -1))
-            #         elif metric == 'pearson':
-            #             similarity_prob, _ = pearsonr(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'spearman':
-            #             similarity_prob, _ = spearmanr(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'spearmanf':
-            #             similarity_prob = 1-spearman_footrule_distance(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'hamming':
-            #             similarity_prob, _ = hamming(vectors[v_vector_id].astype('intp'), vectors[i_vector_id].astype('intp'))
-            #         elif metric == 'kruskal':
-            #             if np.array_equal(vectors[v_vector_id],vectors[i_vector_id]):
-            #                 similarity_prob=1.0
-            #             else:
-            #                 _,similarity_prob = kruskal(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'ndcg_score':
-            #             similarity_prob, _ = ndcg_score(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'rbo':
-            #             similarity_prob = rbo(vectors[v_vector_id], vectors[i_vector_id], self.rbo_p)
-            #         elif metric == 'wta':
-            #             similarity_prob = wtaSimilarity(vectors[v_vector_id], vectors[i_vector_id])
-            #         elif metric == 'mannwhitneyu':
-            #             if np.array_equal(vectors[v_vector_id],vectors[i_vector_id]):
-            #                 similarity_prob=1.0
-            #             else:
-            #                 _,similarity_prob = mannwhitneyu(vectors[v_vector_id], vectors[i_vector_id])
-            #         else:
-            #             warnings.warn("SimilarityEvaluation: Available similarity metrics: kendal,customKendal,jaccard,ndcg_score,cosine,spearman,pearson")
-
-
-            #         self.similarityProb_matrix[v_vector_id][i_vector_id] = similarity_prob
-            #         self.similarityProb_matrix[i_vector_id][v_vector_id] = similarity_prob
-                    
-            #         if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
-            #             self.sameObjectsCompared += 1
-
-            #         if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
-            #             self.difObjectsCompared += 1
-
-            #         if similarity_prob > threshold:
-            #             if v_vector_id not in mapping.keys():
-            #                 mapping[v_vector_id] = []
-            #             mapping[v_vector_id].append(i_vector_id)  # insert into mapping
-            #             mapping_matrix[v_vector_id][i_vector_id] = 1  # inform prediction matrix
-            #             mapping_matrix[i_vector_id][v_vector_id] = 1  # inform prediction matrix
-            #             if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
-            #                 self.sameObjectsComparedSuccess += 1
-            #         elif similarity_prob <= threshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
-            #             self.diffObjectsComparedSuccess += 1
 
     
     #####################################################################
