@@ -1,5 +1,5 @@
 '''
-@author: Konstantinos Nikoletos, 2021
+@author: Konstantinos Nikoletos, 2022
 '''
 import numpy as np
 import editdistance
@@ -42,7 +42,7 @@ from utils.metrics import *
 # ----    Main model class     ---- #
 # --------------------------------- #
 
-class RankedWTAHash:
+class WinnER:
 
     def __init__(self, max_numberOf_clusters, max_dissimilarityDistance, windowSize, 
                  number_of_permutations=1, min_numOfNodes = 2, jaccard_withchars =True,
@@ -97,7 +97,7 @@ class RankedWTAHash:
         """
 
         if self.verboseLevel >=0 :
-            print("\n#####################################################################\n#     .~ RankedWTAHash with Vantage embeddings starts training ~.   #\n#####################################################################\n")
+            print("\n#####################################################################\n#     .~ WinnER with Vantage embeddings starts training ~.   #\n#####################################################################\n")
 
         if isinstance(X, list):
             input_strings = X
@@ -425,7 +425,7 @@ class RankedWTAHash:
             string_embedding = []
             for p in range(0,VantageObjects.size):
                 if VantageObjects[p] != None:
-                    string_embedding.append(self.DistanceMetric(s,p,S,VantageObjects, self.pairDictionary))
+                    string_embedding.append(self.DistanceMetric(s, p, S, VantageObjects))
 
             # --- Ranking representation ---- #
             ranked_string_embedding = stats.rankdata(string_embedding, method='min')
@@ -450,7 +450,7 @@ class RankedWTAHash:
         elif self.distanceMetricEmbedding == 'euclid_jaccard':
             return self.hybridEuclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
         else:
-            warnings.warn("Available metrics: edit,jaccard,l_inf")
+            warnings.warn("Available metrics: edit, jaccard, euclid_jaccard, l_inf")
     
     def l_inf(self,VantageObjects,S,s,p):
         max_distance = None
@@ -503,7 +503,6 @@ class RankedWTAHash:
 
                 if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
                     warnings.warn("Upper bound of comparisons has been achieved")
-                    # return None, None
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
                     similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
@@ -539,7 +538,7 @@ class RankedWTAHash:
                     else:
                         _,similarity_prob = mannwhitneyu(vectors[v_vector_id], vectors[i_vector_id])
                 else:
-                    warnings.warn("SimilarityEvaluation: Available similarity metrics: kendal,customKendal,jaccard,ndcg_score,cosine,spearman,pearson")
+                    warnings.warn("Similarity not exists, available similarity metrics: kendal, rbo, spearman, pearson")
 
 
                 lock.acquire()
@@ -705,7 +704,7 @@ def customClassificationReport(predicted_matrix, true_matrix):
     print("False negatives: ", false_negatives)
 
 def set_params(params_dict):
-    return RankedWTAHash(
+    return WinnER(
         max_numberOf_clusters = params_dict["max_numberOf_clusters"],
         max_dissimilarityDistance = params_dict["max_dissimilarityDistance"],
         windowSize = params_dict["windowSize"],
