@@ -215,7 +215,7 @@ class WinnER:
         elif self.similarityVectors == 'initial':
             self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
         else:
-            warnings.warn("similarityVectors: Available options are: ranked,initial")
+            warnings.warn("similarityVectors: Available options are: ranked, initial")
         
         if self.mapping == None and self.mapping_matrix == None:
             return None
@@ -502,7 +502,7 @@ class WinnER:
                 lock.release()
 
                 if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
-                    warnings.warn("Upper bound of comparisons has been achieved")
+                    warnings.warn("Upper bound of comparisons has been achieved", DeprecationWarning)
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
                     similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
