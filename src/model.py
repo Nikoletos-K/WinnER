@@ -15,7 +15,10 @@ import threading
 import logging
 
 from joblib import Parallel, delayed
-from tqdm.notebook import tqdm as tqdm
+
+# from tqdm.notebook import tqdm as tqdm
+from tqdm import tqdm as tqdm
+
 from scipy.spatial.distance import hamming
 from scipy.stats._stats import _kendall_dis
 from scipy.stats import spearmanr,kendalltau,pearsonr,kruskal,mannwhitneyu

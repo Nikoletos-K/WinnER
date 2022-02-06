@@ -108,5 +108,5 @@ title = "eujacc_chars_3gramms-cora"
 study_name = title  # Unique identifier of the study.
 storage_name = "sqlite:///{}.db".format(title)
 study = optuna.create_study(directions=["maximize"], study_name=study_name, storage=storage_name, load_if_exists=True)
-study.optimize(objective, n_trials=20, show_progress_bar=True)
-results_dataframe.to_pickle("./results/" + study_name + datetime.datetime.now().strftime("_%m%d%H%M") + ".pkl")
+study.optimize(objective, n_trials=50, show_progress_bar=True)
+results_dataframe.to_pickle(study_name + datetime.now().strftime("_%m%d%H%M") + ".pkl")
