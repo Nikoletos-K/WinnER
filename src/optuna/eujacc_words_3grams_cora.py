@@ -43,10 +43,10 @@ def objective(trial):
     
     ngramms = trial.suggest_categorical("ngramms",[3]) 
     jaccard_withchars = trial.suggest_categorical("jaccard_withchars", [False])
-    max_numberOf_clusters = trial.suggest_int("max_numberOf_clusters", 700, 1000) 
+    max_numberOf_clusters = trial.suggest_int("max_numberOf_clusters", 100, 1000) 
     distanceMetric = trial.suggest_categorical("distanceMetric", ["euclid_jaccard"])
-    max_dissimilarityDistance= trial.suggest_float("max_dissimilarityDistance", 0.3, 0.8)
-    prototypesFilterThr = trial.suggest_float("prototypesFilterThr", max_dissimilarityDistance-max_dissimilarityDistance/2, max_dissimilarityDistance-max_dissimilarityDistance/5)
+    max_dissimilarityDistance= trial.suggest_float("max_dissimilarityDistance", 0.2, 0.8)
+    prototypesFilterThr = trial.suggest_float("prototypesFilterThr", 0.1, 0.3)
 
     # --- Embedding phase
     distanceMetricEmbedding = trial.suggest_categorical("distanceMetricEmbedding", ["euclid_jaccard", "l_inf"])
@@ -61,50 +61,43 @@ def objective(trial):
     metric = trial.suggest_categorical("metric",["kendal"]) 
     
     start = time.time()
-    try:
-        model = WinnER(
-            max_numberOf_clusters= max_numberOf_clusters,
-            max_dissimilarityDistance= max_dissimilarityDistance,
-            windowSize= windowSize,
-            similarityThreshold= similarityThreshold,
-            metric=metric,
-            similarityVectors=similarityVectors,
-            number_of_permutations = number_of_permutations,
-            distanceMetric= distanceMetric,
-            distanceMetricEmbedding = distanceMetricEmbedding,
-            ngramms= ngramms,
-            jaccard_withchars = jaccard_withchars,
-            prototypesFilterThr = prototypesFilterThr,
-            verboseLevel = 0,
-            maxNumberOfComparisons = int((CORA.shape[0]*CORA.shape[0])/SPEED_UP_RATE)
-            #         disableTqdm = True
-        )
-        model.hackForDebug(labels_groundTruth, true_matrix)
-        model = model.fit(data)
-        if model == None:
-            precision = 0.0
-            f1 = 0.0
-            recall = 0.0
-        else:
-            acc,f1,precision,recall = model.evaluate(model.mapping_matrix, true_matrix, with_confusion_matrix=False)
+    model = WinnER(
+        max_numberOf_clusters= max_numberOf_clusters,
+        max_dissimilarityDistance= max_dissimilarityDistance,
+        windowSize= windowSize,
+        similarityThreshold= similarityThreshold,
+        metric=metric,
+        similarityVectors=similarityVectors,
+        number_of_permutations = number_of_permutations,
+        distanceMetric= distanceMetric,
+        distanceMetricEmbedding = distanceMetricEmbedding,
+        ngramms= ngramms,
+        jaccard_withchars = jaccard_withchars,
+        prototypesFilterThr = prototypesFilterThr,
+        verboseLevel = 0,
+        maxNumberOfComparisons = int((CORA.shape[0]*CORA.shape[0])/SPEED_UP_RATE)
+        #         disableTqdm = True
+    )
+    model.hackForDebug(labels_groundTruth, true_matrix)
+    model = model.fit(data)
+    if model == None:
+        precision = 0.0
+        f1 = 0.0
+        recall = 0.0
+    else:
+        acc,f1,precision,recall = model.evaluate(model.mapping_matrix, true_matrix, with_confusion_matrix=False)
 
-        exec_time = time.time() - start
-        results_dataframe.loc[len(results_dataframe)+1] = [
-            max_numberOf_clusters,max_dissimilarityDistance,similarityThreshold,
-            windowSize,metric,similarityVectors,distanceMetricEmbedding,distanceMetric,
-            number_of_permutations,ngramms,jaccard_withchars, 
-            model.numOfComparisons, model.diffObjectsComparedSuccess, model.sameObjectsCompared, model.sameObjectsComparedSuccess,
-            model.selectionVariance,model.selected_numOfPrototypes,len(model.buckets.keys()),
-            model.prototypes_time, model.embeddings_time, model.wta_time, model.similarity_time, acc, precision, recall, f1, exec_time]
-    except Warning as e:
-        print(e)
-        # trial.report(intermediate_value, step)
-        if trial.should_prune():
-            raise optuna.TrialPruned()
-
+    exec_time = time.time() - start
+    results_dataframe.loc[len(results_dataframe)+1] = [
+        max_numberOf_clusters,max_dissimilarityDistance,similarityThreshold,
+        windowSize,metric,similarityVectors,distanceMetricEmbedding,distanceMetric,
+        number_of_permutations,ngramms,jaccard_withchars, 
+        model.numOfComparisons, model.diffObjectsComparedSuccess, model.sameObjectsCompared, model.sameObjectsComparedSuccess,
+        model.selectionVariance,model.selected_numOfPrototypes,len(model.buckets.keys()),
+        model.prototypes_time, model.embeddings_time, model.wta_time, model.similarity_time, acc, precision, recall, f1, exec_time]
     return recall
 
-title = "eujacc_words_3gramms-cora"
+title = "eujacc_words_3grams-cora"
 study_name = title  # Unique identifier of the study.
 storage_name = "sqlite:///{}.db".format(title)
 study = optuna.create_study(directions=["maximize"], study_name=study_name, storage=storage_name, load_if_exists=True)

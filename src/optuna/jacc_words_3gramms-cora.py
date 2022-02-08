@@ -25,7 +25,7 @@ data_length = [ len(x) for x in data ]
 
 # --- Results DF --- #
 results_dataframe = pd.DataFrame(
-    columns=['trial_id', 'maxNumberOfClusters','maxDissimilarityDistance','similarityThreshold',
+    columns=['maxNumberOfClusters','maxDissimilarityDistance','similarityThreshold',
              'windowSize','metric','similarityVectors',"distanceMetricEmbedding","distanceMetric",
              "numberOfPermutations","ngramms","jaccardWithChars", 
              "numOfComparisons", "diffObjectsComparedSuccess", "sameObjectsCompared", "sameObjectsComparedSuccess",
@@ -41,18 +41,18 @@ SPEED_UP_RATE = 9
 '''
 def objective(trial):
     
-    ngramms = trial.suggest_categorical("ngramms",[3])
-    jaccard_withchars = trial.suggest_categorical("jaccard_withchars", [True])
-    max_numberOf_clusters = trial.suggest_int("max_numberOf_clusters", 500, 1000)
-    distanceMetric = trial.suggest_categorical("distanceMetric", ["euclid_jaccard"])
-    max_dissimilarityDistance= trial.suggest_float("max_dissimilarityDistance", 0.1, 0.5)
-    prototypesFilterThr = trial.suggest_float("prototypesFilterThr", 0.1, 0.3)
+    ngramms = trial.suggest_categorical("ngramms",[3]) 
+    jaccard_withchars = trial.suggest_categorical("jaccard_withchars", [False])
+    max_numberOf_clusters = trial.suggest_int("max_numberOf_clusters", 700, 1000) 
+    distanceMetric = trial.suggest_categorical("distanceMetric", ["jaccard"])
+    max_dissimilarityDistance= trial.suggest_float("max_dissimilarityDistance", 0.2, 0.8)
+    prototypesFilterThr = trial.suggest_float("prototypesFilterThr", max_dissimilarityDistance-max_dissimilarityDistance/2, max_dissimilarityDistance-max_dissimilarityDistance/5)
 
     # --- Embedding phase
-    distanceMetricEmbedding = trial.suggest_categorical("distanceMetricEmbedding", ["euclid_jaccard"])
+    distanceMetricEmbedding = trial.suggest_categorical("distanceMetricEmbedding", ["jaccard", "l_inf"])
     
     # -- WTA algorithm
-    windowSize= trial.suggest_int("windowSize", 25, 100) 
+    windowSize= trial.suggest_int("windowSize", 25, 150) 
     number_of_permutations= trial.suggest_int("number_of_permutations", 1, 5) 
     
     # -- Similarity evaluation
@@ -88,9 +88,8 @@ def objective(trial):
         acc,f1,precision,recall = model.evaluate(model.mapping_matrix, true_matrix, with_confusion_matrix=False)
 
     exec_time = time.time() - start
-    trial_id = trial.number
     results_dataframe.loc[len(results_dataframe)+1] = [
-        trial_id, max_numberOf_clusters,max_dissimilarityDistance,similarityThreshold,
+        max_numberOf_clusters,max_dissimilarityDistance,similarityThreshold,
         windowSize,metric,similarityVectors,distanceMetricEmbedding,distanceMetric,
         number_of_permutations,ngramms,jaccard_withchars, 
         model.numOfComparisons, model.diffObjectsComparedSuccess, model.sameObjectsCompared, model.sameObjectsComparedSuccess,
@@ -99,9 +98,9 @@ def objective(trial):
 
     return recall
 
-title = "eujacc_chars_3grams-cora"
+title = "jacc_words_3grams-cora"
 study_name = title  # Unique identifier of the study.
 storage_name = "sqlite:///{}.db".format(title)
 study = optuna.create_study(directions=["maximize"], study_name=study_name, storage=storage_name, load_if_exists=True)
-study.optimize(objective, n_trials=1, show_progress_bar=True)
+study.optimize(objective, n_trials=50, show_progress_bar=True)
 results_dataframe.to_pickle(study_name + datetime.now().strftime("_%m%d%H%M") + ".pkl")

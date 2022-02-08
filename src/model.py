@@ -331,7 +331,7 @@ class WinnER:
 
         new_numofClusters = k
         prototype_index = 0
-        for j in tqdm(range(0,k,1), desc="Prototype selcetion", disable = self.disableTqdm, dynamic_ncols = True):
+        for j in tqdm(range(0,k,1), desc="Prototype selection", disable = self.disableTqdm, dynamic_ncols = True):
             
             apprxDistances = self.ApproximatedProjectionDistancesofCluster(r[1][j], r[0][j], Clusters[j])
             

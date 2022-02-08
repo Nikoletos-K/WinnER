@@ -47,10 +47,10 @@ class WTA:
             for v_index in range(0,numOfVectors,1):
                 if permutation_index == 0:
                     X_new = self.permuted(vectors[v_index],theta)
-                    newVectors.append(X_new)
+                    newVectors.append(X_new[:self.K])
                 else:
                     X_new = self.permuted(vectors[v_index],theta)
-                    newVectors[v_index] = X_new
+                    newVectors[v_index] = X_new[:self.K]
 
                 # C[i] = np.argsort(X_new[:self.K])[-self.m:].tolist()
                 # C[i] = max(range(len(X_new[:self.K])), key=X_new[:self.K].__getitem__)
