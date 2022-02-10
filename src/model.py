@@ -26,7 +26,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from nltk.metrics.distance import jaccard_distance
 from sklearn.metrics import jaccard_score, accuracy_score, f1_score, recall_score, precision_score, classification_report
 from scipy import stats 
-from scipy.spatial.distance import hamming,jaccard
+from scipy.spatial.distance import hamming, jaccard
 from sklearn.metrics import ndcg_score
 from bloom_filter import BloomFilter
 from cantor import q_encode
@@ -47,42 +47,39 @@ from utils.metrics import *
 
 class WinnER:
 
-    def __init__(self, max_numberOf_clusters, max_dissimilarityDistance, windowSize, 
-                 number_of_permutations=1, min_numOfNodes = 2, jaccard_withchars =True,
-                 distanceMetricEmbedding = 'euclidean', metric = 'kendal', similarityVectors='ranked', 
-                 distanceMetric = 'jaccard', prototypesFilterThr = None, ngramms = None, 
-                 similarityThreshold = None, earlyStop=0, numOfThreads = 16,
-                 verboseLevel=0, rbo_p = 0.7, wtaM = 1, maxNumberOfComparisons = 250000, disableTqdm = False):
+    def __init__(self, max_num_of_clusters, max_dissimilarity_distance, window_size, 
+                 number_of_permutations = 1, char_tokenization = True,
+                 embedding_distance_metric = 'jaccard', metric = 'kendal', similarity_vectors = 'ranked', 
+                 distance_metric = 'jaccard', prototypes_optimization_thr = None, ngrams = None, 
+                 similarity_threshold = None, num_of_threads = 16,
+                 verbose_level=0, rbo_p = 0.7, wta_m = 1, max_num_of_comparisons = 250000, disable_tqdm = False):
         '''
           Constructor
         '''
-        self.max_numberOf_clusters = max_numberOf_clusters
+        self.max_num_of_clusters = max_num_of_clusters
         self.pairDictionary = dict()
-        self.max_dissimilarityDistance = max_dissimilarityDistance
-        self.windowSize = windowSize
+        self.max_dissimilarity_distance = max_dissimilarity_distance
+        self.window_size = window_size
         self.S_set = None
         self.S_index = None
-        self.similarityThreshold = similarityThreshold
+        self.similarity_threshold = similarity_threshold
         self.metric = metric
-        self.min_numOfNodes = min_numOfNodes
-        self.similarityVectors = similarityVectors
+        self.similarity_vectors = similarity_vectors
         self.number_of_permutations = number_of_permutations
-        self.distanceMetric = distanceMetric
-        self.distanceMetricEmbedding = distanceMetricEmbedding
-        self.ngramms = ngramms
-        self.jaccard_withchars =  jaccard_withchars
-        self.prototypesFilterThr = prototypesFilterThr
-        self.earlyStop = earlyStop
-        self.selectionVariance = None
-        self.numOfComparisons = 0
-        self.verboseLevel = verboseLevel
+        self.distance_metric = distance_metric
+        self.embedding_distance_metric = embedding_distance_metric
+        self.ngrams = ngrams
+        self.char_tokenization =  char_tokenization
+        self.prototypes_optimization_thr = prototypes_optimization_thr
+        self.selection_variance = None
+        self.num_of_comparisons = 0
+        self.verbose_level = verbose_level
         self.rbo_p = rbo_p
-        self.wtaM = wtaM
-        self.MAX_NUMBER_OF_COMPARISONS = maxNumberOfComparisons
-        self.disableTqdm = disableTqdm
-        self.numOfThreads = numOfThreads
+        self.wta_m = wta_m
+        self.MAX_NUMBER_OF_COMPARISONS = max_num_of_comparisons
+        self.disable_tqdm = disable_tqdm
+        self.num_of_threads = num_of_threads
         
-
     def hackForDebug(self, labels_groundTruth, true_matrix):
         self.labels_groundTruth = labels_groundTruth
         self.true_matrix = true_matrix
@@ -99,7 +96,7 @@ class WinnER:
           self : The fitted classifier.
         """
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n#####################################################################\n#                           .~  WinnER  ~.                          #\n#####################################################################\n")
 
         if isinstance(X, list):
@@ -110,30 +107,30 @@ class WinnER:
         inputSize = len(input_strings)
         self.initialS_set = np.array(input_strings,dtype=object)
         self.S_set = np.array(input_strings,dtype=object)
-        if (self.distanceMetric == 'jaccard' or self.distanceMetric == 'euclid_jaccard') and self.jaccard_withchars == False:
+        if (self.distance_metric == 'jaccard' or self.distance_metric == 'euclid_jaccard') and self.char_tokenization == False:
             for i in range(0,len(input_strings)):
-                self.S_set[i] = set(nltk.ngrams(nltk.word_tokenize(self.S_set[i]), n=self.ngramms))
-        elif (self.distanceMetric == 'jaccard' or self.distanceMetric == 'euclid_jaccard') and self.jaccard_withchars == True:
+                self.S_set[i] = set(nltk.ngrams(nltk.word_tokenize(self.S_set[i]), n=self.ngrams))
+        elif (self.distance_metric == 'jaccard' or self.distance_metric == 'euclid_jaccard') and self.char_tokenization == True:
             for i in range(0,len(input_strings)):
-                self.S_set[i] = set(nltk.ngrams(self.S_set[i], n=self.ngramms))
+                self.S_set[i] = set(nltk.ngrams(self.S_set[i], n=self.ngrams))
 
         self.S_index = np.arange(0,len(input_strings),1)
         self.bloomFilterMaxElemnets = inputSize*inputSize
 
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("\n\nString positions are:")
             print(self.S_index)
             print("\n")
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("###########################################################\n# > 1. Prototype selection phase                          #\n###########################################################\n")
             print("\n-> Finding prototypes and representatives of each cluster:")
         
         prototypes_time = time.time()
-        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_numberOf_clusters, self.max_dissimilarityDistance)
+        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_num_of_clusters, self.max_dissimilarity_distance)
         self.embeddingDim = self.prototypeArray.size
         
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("\n- Prototypes selected:")
             print(self.prototypeArray)
             heatmapData = []
@@ -141,94 +138,85 @@ class WinnER:
                 print(pr," -> ",self.initialS_set[pr])
                 heatmapData.append(self.S_set[pr])            
             if self.selected_numOfPrototypes > 2:
-                self.selectionVariance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
-                print("\n- Mean variance in prototype selection: ", self.selectionVariance)
+                self.selection_variance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
+                print("\n- Mean variance in prototype selection: ", self.selection_variance)
 
         self.prototypes_time = time.time() - prototypes_time
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
             print("\n# Finished in %.6s secs" % (prototypes_time))
             print("\n")
 
-        if self.earlyStop==1:
-            return self
-
-        if self.verboseLevel >= 0:
+        if self.verbose_level >= 0:
             print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
             print("\n-> Creating Embeddings:")
         embeddings_time = time.time()
         self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray)
        
-        if self.verboseLevel > 0:
+        if self.verbose_level > 0:
             SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
         
         self.embeddings_time = time.time() - embeddings_time
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n# Finished in %.6s secs" % (embeddings_time))
             print("\n")
 
-        if self.earlyStop==2:
-            return self
-
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("###########################################################\n# > 3. WTA Hashing                                        #\n###########################################################\n")
             print("\n-> Creating WTA Buckets:")
 
         wta_time = time.time()
-        wta = WTA(self.windowSize, self.number_of_permutations, self.wtaM, self.disableTqdm)
+        wta = WTA(self.window_size, self.number_of_permutations, self.wta_m, self.disable_tqdm)
         self.HashedClusters, self.buckets, self.rankedVectors = wta.fit(self.Embeddings)
         
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("- WTA buckets: ")
             for key in self.buckets.keys():
                 print(key," -> ",self.buckets[key])
         
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n- WTA number of buckets: ", len(self.buckets.keys()))
         
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("\n- WTA RankedVectors after permutation:")
             print(self.rankedVectors)
 
-        if self.verboseLevel > 0:
-            if self.similarityVectors == 'ranked':
+        if self.verbose_level > 0:
+            if self.similarity_vectors == 'ranked':
                 SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_groundTruth)
-            elif self.similarityVectors == 'initial':
+            elif self.similarity_vectors == 'initial':
                 SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
 
         self.wta_time = time.time() - wta_time
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n# Finished in %.6s secs" % (wta_time))
             print("\n")
-        
-        if self.earlyStop==3:
-            return self
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("###########################################################\n# > 4. Similarity checking                                #\n###########################################################\n")
             print("\n-> Similarity checking:")
 
         similarity_time = time.time()
 
-        if self.similarityVectors == 'ranked':
+        if self.similarity_vectors == 'ranked':
             self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors)
-        elif self.similarityVectors == 'initial':
+        elif self.similarity_vectors == 'initial':
             self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
         else:
-            warnings.warn("similarityVectors: Available options are: ranked, initial")
+            warnings.warn("similarity_vectors: Available options are: ranked, initial")
         
         if self.mapping == None and self.mapping_matrix == None:
             return None
 
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("- Similarity mapping in a matrix")
             print(self.mapping_matrix)
         
-        if self.verboseLevel > 0:
-            print("Total comparisons: ", self.numOfComparisons)
+        if self.verbose_level > 0:
+            print("Total comparisons: ", self.num_of_comparisons)
             print(" -> between same objects: ", self.sameObjectsCompared )
             print(" -> between same objects with success: ", self.sameObjectsComparedSuccess)
             print(" -> between different objects: ", self.difObjectsCompared)
@@ -236,32 +224,32 @@ class WinnER:
         
         self.similarity_time = time.time() - similarity_time
 
-        if self.verboseLevel >=0 :
+        if self.verbose_level >=0 :
             print("\n# Finished in %.6s secs" % (similarity_time))
             print("\n#####################################################################\n#                           .~  End  ~.                             #\n#####################################################################\n")
 
         return self
 
     def dissimilarityDistance(self, str1, str2, verbose=False):
-        if self.verboseLevel > 2:
+        if self.verbose_level > 2:
             print("-> ", self.initialS_set[str1])
             print("--> ", self.initialS_set[str2])
 
         if frozenset([str1,str2]) in self.pairDictionary.keys():
             return self.pairDictionary[frozenset([str1,str2])]
         else:
-            if self.distanceMetric == 'edit':
+            if self.distance_metric == 'edit':
                 distance = editdistance.eval(self.S_set[str1],self.S_set[str2])
-            elif self.distanceMetric == 'jaccard':
+            elif self.distance_metric == 'jaccard':
                 distance = jaccard_distance(self.S_set[str1],self.S_set[str2])
-            elif self.distanceMetric == 'euclid_jaccard':
+            elif self.distance_metric == 'euclid_jaccard':
                 distance = math.sqrt(jaccard_distance(self.S_set[str1],self.S_set[str2]))                
             else:
                 warnings.warn("Available metrics for space creation: edit, jaccard, euclid_jaccard ")
 
             self.pairDictionary[frozenset([str1,str2])] = distance
             
-            if self.verboseLevel > 2:
+            if self.verbose_level > 2:
                 print(distance)
             
             return distance
@@ -288,7 +276,7 @@ class WinnER:
 
         Clusters = [ [] for l in range(0,k)]
 
-        for i in tqdm(range(0,S.size,1), desc="Representatives selection", disable = self.disableTqdm, dynamic_ncols = True):     # String-clustering phase, for all strings
+        for i in tqdm(range(0,S.size,1), desc="Representatives selection", disable = self.disable_tqdm, dynamic_ncols = True):     # String-clustering phase, for all strings
             while j < k :       # iteration through clusters, for all clusters
                 if r[0][j] == None:      # case empty first representative for cluster j
                     r[0][j] = S[i]   # init cluster representative with string i
@@ -314,7 +302,7 @@ class WinnER:
         Prototypes = []
         sortedProjections = []
 
-        if self.verboseLevel > 2:
+        if self.verbose_level > 2:
             print("- - - - - - - - -")
             print("Cluster array:")
             print(C)
@@ -331,7 +319,7 @@ class WinnER:
 
         new_numofClusters = k
         prototype_index = 0
-        for j in tqdm(range(0,k,1), desc="Prototype selection", disable = self.disableTqdm, dynamic_ncols = True):
+        for j in tqdm(range(0,k,1), desc="Prototype selection", disable = self.disable_tqdm, dynamic_ncols = True):
             
             apprxDistances = self.ApproximatedProjectionDistancesofCluster(r[1][j], r[0][j], Clusters[j])
             
@@ -395,14 +383,14 @@ class WinnER:
     def OptimizeClusterSelection(self,Prototypes,numOfPrototypes):
 
         notwantedPrototypes = []
-        for pr_1 in tqdm(range(0,numOfPrototypes), desc="Prototype optimization", disable = self.disableTqdm, dynamic_ncols = True):
+        for pr_1 in tqdm(range(0,numOfPrototypes), desc="Prototype optimization", disable = self.disable_tqdm, dynamic_ncols = True):
             for pr_2 in range(pr_1+1,numOfPrototypes):
-                if self.dissimilarityDistance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypesFilterThr:
+                if self.dissimilarityDistance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypes_optimization_thr:
                     notwantedPrototypes.append(Prototypes[pr_2])
 
         newPrototypes = list((set(Prototypes)).difference(set(notwantedPrototypes)))
         
-        if self.verboseLevel > 1:
+        if self.verbose_level > 1:
             print("Prototypes before:")
             print(Prototypes)
             print("Not wanted:")
@@ -424,7 +412,7 @@ class WinnER:
 
         # ------- Distance computing ------- #
         vectors = []
-        for s in tqdm(range(0,S.size), desc="Creating embeddings", disable = self.disableTqdm, dynamic_ncols = True):
+        for s in tqdm(range(0,S.size), desc="Creating embeddings", disable = self.disable_tqdm, dynamic_ncols = True):
             string_embedding = []
             for p in range(0,VantageObjects.size):
                 if VantageObjects[p] != None:
@@ -444,13 +432,13 @@ class WinnER:
     '''
     def DistanceMetric(self, s, p, S, VantageObjects):
 
-        if self.distanceMetricEmbedding == 'l_inf':
+        if self.embedding_distance_metric == 'l_inf':
             return self.l_inf(VantageObjects,S,s,p)
-        elif self.distanceMetricEmbedding == 'edit':
+        elif self.embedding_distance_metric == 'edit':
             return self.dissimilarityDistance(S[s],VantageObjects[p])
-        elif self.distanceMetricEmbedding == 'jaccard':
+        elif self.embedding_distance_metric == 'jaccard':
             return jaccard_distance(self.S_set[S[s]],self.S_set[VantageObjects[p]])
-        elif self.distanceMetricEmbedding == 'euclid_jaccard':
+        elif self.embedding_distance_metric == 'euclid_jaccard':
             return self.hybridEuclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
         else:
             warnings.warn("Available metrics: edit, jaccard, euclid_jaccard, l_inf")
@@ -501,10 +489,10 @@ class WinnER:
                     lock.release()
 
                 lock.acquire()
-                self.numOfComparisons += 1
+                self.num_of_comparisons += 1
                 lock.release()
 
-                if self.numOfComparisons >= self.MAX_NUMBER_OF_COMPARISONS:
+                if self.num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
                     warnings.warn("Upper bound of comparisons has been achieved", DeprecationWarning)
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
@@ -554,7 +542,7 @@ class WinnER:
                 if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
                     self.difObjectsCompared += 1
 
-                if similarity_prob > self.similarityThreshold:
+                if similarity_prob > self.similarity_threshold:
                     if v_vector_id not in self.mapping.keys():
                         self.mapping[v_vector_id] = []
                     self.mapping[v_vector_id].append(i_vector_id)  # insert into mapping
@@ -562,7 +550,7 @@ class WinnER:
                     self.mapping_matrix[i_vector_id][v_vector_id] = 1  # inform prediction matrix
                     if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
                         self.sameObjectsComparedSuccess += 1
-                elif similarity_prob <= self.similarityThreshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
+                elif similarity_prob <= self.similarity_threshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
                     self.diffObjectsComparedSuccess += 1
                 lock.release()
 
@@ -574,7 +562,7 @@ class WinnER:
         self.similarityProb_matrix = np.empty([numOfVectors,numOfVectors],dtype=np.float)* np.nan
         self.mapping = {}
         
-        self.numOfComparisons = 0
+        self.num_of_comparisons = 0
         self.diffObjectsComparedSuccess = 0
         self.difObjectsCompared = 0
         self.sameObjectsCompared = 0
@@ -589,16 +577,16 @@ class WinnER:
         thread_index = 0
         thread_pool = []
         
-        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disableTqdm, total = self.numOfBuckets,dynamic_ncols = True):
+        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disable_tqdm, total = self.numOfBuckets,dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
 
             if isinstance(bucket_vectors, set):
                 bucket_vectors = list(bucket_vectors)
             
-            if self.verboseLevel > 1:
+            if self.verbose_level > 1:
                 print(bucket_vectors)
 
-            if  thread_index % self.numOfThreads == 0:
+            if  thread_index % self.num_of_threads == 0:
                 [t.start() for t in thread_pool]            
                 [t.join() for t in thread_pool]
                 thread_pool = []
@@ -609,7 +597,7 @@ class WinnER:
             # thread_pool.append(multiprocessing.Process(target = self.SimilarityEvaluationBucket,
             #                 args=(bucket_vectors, lock)))
         
-        if self.numOfBuckets % self.numOfThreads != 0: 
+        if self.numOfBuckets % self.num_of_threads != 0: 
             [t.start() for t in thread_pool]            
             [t.join() for t in thread_pool]
 
@@ -623,7 +611,7 @@ class WinnER:
 
     def evaluate(self, predicted_matrix, true_matrix, with_classification_report=False, with_confusion_matrix=True, with_detailed_report=False):
         
-        if self.verboseLevel >= 0:
+        if self.verbose_level >= 0:
             print("#####################################################################\n#                          Evaluation                               #\n#####################################################################\n")
         transformToVector = np.triu_indices(len(true_matrix))    
         true_matrix = true_matrix[transformToVector]
@@ -634,7 +622,7 @@ class WinnER:
         recall = 100*recall_score(true_matrix, predicted_matrix)
         precision = 100*precision_score(true_matrix, predicted_matrix)
 
-        if self.verboseLevel >= 0:
+        if self.verbose_level >= 0:
             print("Accuracy:  %3.2f %%" % (acc))
             print("F1-Score:  %3.2f %%" % (f1))
             print("Recall:    %3.2f %%" % (recall))
@@ -665,7 +653,7 @@ def report(model):
     for key in model.buckets.keys():
         print(key," -> ", len(model.buckets[key]))
     print("\n> 4. Similarity checking\n")
-    print("Total comparisons: ", model.numOfComparisons)
+    print("Total comparisons: ", model.num_of_comparisons)
     print(" -> between same objects: ", model.sameObjectsCompared )
     print(" -> between same objects with success: ", model.sameObjectsComparedSuccess)
     print(" -> between different objects: ", model.difObjectsCompared)
@@ -708,17 +696,17 @@ def customClassificationReport(predicted_matrix, true_matrix):
 
 def set_params(params_dict):
     return WinnER(
-        max_numberOf_clusters = params_dict["max_numberOf_clusters"],
-        max_dissimilarityDistance = params_dict["max_dissimilarityDistance"],
-        windowSize = params_dict["windowSize"],
-        similarityThreshold = params_dict["similarityThreshold"],
+        max_num_of_clusters = params_dict["max_num_of_clusters"],
+        max_dissimilarity_distance = params_dict["max_dissimilarity_distance"],
+        window_size = params_dict["window_size"],
+        similarity_threshold = params_dict["similarity_threshold"],
         metric = params_dict["metric"],
-        similarityVectors = params_dict["similarityVectors"],
+        similarity_vectors = params_dict["similarity_vectors"],
         number_of_permutations = params_dict["number_of_permutations"],
-        distanceMetric = params_dict["distanceMetric"],
-        distanceMetricEmbedding = params_dict["distanceMetricEmbedding"],
-        ngramms = params_dict["ngramms"],
-        jaccard_withchars = params_dict["jaccard_withchars"],
-        prototypesFilterThr = params_dict["prototypesFilterThr"],
-        verboseLevel = 0
+        distance_metric = params_dict["distance_metric"],
+        embedding_distance_metric = params_dict["embedding_distance_metric"],
+        ngrams = params_dict["ngrams"],
+        char_tokenization = params_dict["char_tokenization"],
+        prototypes_optimization_thr = params_dict["prototypes_optimization_thr"],
+        verbose_level = 0
     )
