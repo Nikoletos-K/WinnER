@@ -666,6 +666,58 @@ class WinnER:
         
         return acc,f1,precision,recall
 
+    #####################################################################
+    #                          Utilities                                # 
+    #####################################################################
+
+    def get_params(self):
+        return {
+            "max_num_of_clusters" : self.max_num_of_clusters, 
+            "max_dissimilarity_distance" : self.max_dissimilarity_distance, 
+            "window_size" : self.window_size,  
+            "number_of_permutations" : self.number_of_permutations, 
+            "char_tokenization" : self.char_tokenization,
+            "embedding_distance_metric" : self.embedding_distance_metric, 
+            "metric" : self.metric, 
+            "similarity_vectors" : self.similarity_vectors, 
+            "distance_metric" : self.distance_metric, 
+            "prototypes_optimization_thr" : self.prototypes_optimization_thr, 
+            "ngrams" : self.ngrams, 
+            "similarity_threshold" : self.similarity_threshold, 
+            "num_of_threads" : self.num_of_threads,
+            "verbose_level" : self.verbose_level, 
+            "disable_tqdm" : self.disable_tqdm            
+        }
+
+    def set_params(self, params_dict):
+        if "max_num_of_clusters" in params_dict.keys():
+            self.max_num_of_clusters = params_dict["max_num_of_clusters"]
+        if "max_dissimilarity_distance" in params_dict.keys():
+            self.max_dissimilarity_distance = params_dict["max_dissimilarity_distance"]
+        if "window_size" in params_dict.keys():
+            self.window_size = params_dict["window_size"]
+        if "similarity_threshold" in params_dict.keys():
+            self.similarity_threshold = params_dict["similarity_threshold"]
+        if "metric" in params_dict.keys():
+            self.metric = params_dict["metric"]
+        if "similarity_vectors" in params_dict.keys():
+            self.similarity_vectors = params_dict["similarity_vectors"]
+        if "number_of_permutations" in params_dict.keys():
+            self.number_of_permutations = params_dict["number_of_permutations"]
+        if "distance_metric" in params_dict.keys():
+            self.distance_metric = params_dict["distance_metric"]
+        if "embedding_distance_metric" in params_dict.keys():
+            self.embedding_distance_metric = params_dict["embedding_distance_metric"]
+        if "ngrams" in params_dict.keys():
+            self.ngrams = params_dict["ngrams"]
+        if "char_tokenization" in params_dict.keys():
+            self.char_tokenization = params_dict["char_tokenization"]
+        if "prototypes_optimization_thr" in params_dict.keys():
+            self.prototypes_optimization_thr = params_dict["prototypes_optimization_thr"]
+        if "verbose_level" in params_dict.keys():
+            self.verbose_level = params_dict["verbose_level"]
+    
+
 def report(model):
     
     print("-----------------------\n--- DETAILED REPORT ---\n-----------------------\n")
@@ -717,19 +769,4 @@ def customClassificationReport(predicted_matrix, true_matrix):
     print("False positives: ", false_positives)
     print("False negatives: ", false_negatives)
 
-def set_params(params_dict):
-    return WinnER(
-        max_num_of_clusters = params_dict["max_num_of_clusters"],
-        max_dissimilarity_distance = params_dict["max_dissimilarity_distance"],
-        window_size = params_dict["window_size"],
-        similarity_threshold = params_dict["similarity_threshold"],
-        metric = params_dict["metric"],
-        similarity_vectors = params_dict["similarity_vectors"],
-        number_of_permutations = params_dict["number_of_permutations"],
-        distance_metric = params_dict["distance_metric"],
-        embedding_distance_metric = params_dict["embedding_distance_metric"],
-        ngrams = params_dict["ngrams"],
-        char_tokenization = params_dict["char_tokenization"],
-        prototypes_optimization_thr = params_dict["prototypes_optimization_thr"],
-        verbose_level = 0
-    )
+
