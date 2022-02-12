@@ -1,6 +1,7 @@
 '''
 @author: Konstantinos Nikoletos, 2022
 '''
+from asyncio.log import logger
 import numpy as np
 import editdistance
 import sklearn
@@ -13,6 +14,7 @@ import multiprocessing
 import numba
 import threading
 import logging
+import os, sys
 
 from joblib import Parallel, delayed
 
@@ -70,7 +72,7 @@ class WinnER:
         self.embedding_distance_metric = embedding_distance_metric
         self.ngrams = ngrams
         self.char_tokenization =  char_tokenization
-        self.prototypes_optimization_thr = prototypes_optimization_thr
+        self.prototypes_optimization_thr = max_dissimilarity_distance
         self.selection_variance = None
         self.num_of_comparisons = 0
         self.verbose_level = verbose_level
@@ -130,12 +132,15 @@ class WinnER:
         self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_num_of_clusters, self.max_dissimilarity_distance)
         self.embeddingDim = self.prototypeArray.size
         
-        if self.verbose_level > 1:
-            print("\n- Prototypes selected:")
-            print(self.prototypeArray)
+        if self.verbose_level >= 1:
+
+            if self.verbose_level >= 2:
+                print("\n- Prototypes selected:")
+                print(self.prototypeArray)
             heatmapData = []
             for pr in self.prototypeArray:
-                print(pr," -> ",self.initialS_set[pr])
+                if self.verbose_level >= 2:
+                    print(pr," -> ",self.initialS_set[pr])
                 heatmapData.append(self.S_set[pr])            
             if self.selected_numOfPrototypes > 2:
                 self.selection_variance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
@@ -230,7 +235,7 @@ class WinnER:
 
         return self
 
-    def dissimilarityDistance(self, str1, str2, verbose=False):
+    def dissimilarityDistance(self, str1, str2):
         if self.verbose_level > 2:
             print("-> ", self.initialS_set[str1])
             print("--> ", self.initialS_set[str2])
@@ -507,7 +512,7 @@ class WinnER:
                 elif metric == 'pearson':
                     similarity_prob, _ = pearsonr(vectors[v_vector_id], vectors[i_vector_id])
                 elif metric == 'spearman':
-                    similarity_prob, _ = spearmanr(vectors[v_vector_id], vectors[i_vector_id])
+                    similarity_prob, _ = spearmanr(vectors[v_vector_id], vectors[i_vector_id], nan_policy='omit')
                 elif metric == 'spearmanf':
                     similarity_prob = 1-spearman_footrule_distance(vectors[v_vector_id], vectors[i_vector_id])
                 elif metric == 'hamming':
@@ -577,7 +582,7 @@ class WinnER:
         thread_index = 0
         thread_pool = []
         
-        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disable_tqdm, total = self.numOfBuckets,dynamic_ncols = True):
+        for bucketid, thread_index in tqdm(zip(buckets.keys(), range(0, self.numOfBuckets, 1)), desc="Similarity checking", disable = self.disable_tqdm, total = self.numOfBuckets, dynamic_ncols = True):
             bucket_vectors = buckets[bucketid]
 
             if isinstance(bucket_vectors, set):
@@ -586,19 +591,20 @@ class WinnER:
             if self.verbose_level > 1:
                 print(bucket_vectors)
 
-            if  thread_index % self.num_of_threads == 0:
+            if thread_index % self.num_of_threads == 0:
                 [t.start() for t in thread_pool]            
                 [t.join() for t in thread_pool]
                 thread_pool = []
 
-            thread_pool.append(threading.Thread(target = self.SimilarityEvaluationBucket,
-                            args=(bucket_vectors, lock)))
+            thread_pool.append(
+                threading.Thread(target = self.SimilarityEvaluationBucket, args=(bucket_vectors, lock))
+            )
 
             # thread_pool.append(multiprocessing.Process(target = self.SimilarityEvaluationBucket,
             #                 args=(bucket_vectors, lock)))
         
         if self.numOfBuckets % self.num_of_threads != 0: 
-            [t.start() for t in thread_pool]            
+            [t.start() for t in thread_pool]
             [t.join() for t in thread_pool]
 
         return self.mapping, np.triu(self.mapping_matrix)
