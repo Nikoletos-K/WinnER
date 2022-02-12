@@ -10,10 +10,10 @@ from datasets.common.create_dataset import createDataset, createTrueLabels
 from datetime import datetime
 
 # --- Optuna script on CORA --- #
-METRIC = None; CHAR_TOKENIZATION = None; NGRAMS = None;
+DISSIMILARITY_DISTANCE = None; CHAR_TOKENIZATION = None; NGRAMS = None;
 if "-m" in set(sys.argv):
     METRIC_ARG = sys.argv[sys.argv.index("-m") + 1]
-    METRIC = "jaccard" if sys.argv[sys.argv.index("-m") + 1] == "j" else "euclid_jaccard"
+    DISSIMILARITY_DISTANCE = "jaccard" if sys.argv[sys.argv.index("-m") + 1] == "j" else "euclid_jaccard"
 if "-t" in set(sys.argv):
     CHAR_TOKENIZATION = True if sys.argv[sys.argv.index("-t") + 1] == "1" else False 
     CHAR_LEVEL = "char"  if CHAR_TOKENIZATION else "word"
@@ -49,7 +49,7 @@ results_dataframe = pd.DataFrame(columns = headers)
 SPEED_UP_RATE = 9
 
 # title = "jacc_chars_3grams-cora"
-title = METRIC + "_" + CHAR_LEVEL + "_" + str(NGRAMS) + "_" + "CORA"
+title = DISSIMILARITY_DISTANCE + "_" + CHAR_LEVEL + "_" + str(NGRAMS) + "_" + "CORA"
 print("EXPERIMENTS: ", title)
 db_name = "WinnER_Experiments_v2"
 storage_name = "sqlite:///{}.db".format(db_name)
@@ -72,49 +72,18 @@ def objective(trial):
     
     ngrams = NGRAMS
     char_tokenization = CHAR_TOKENIZATION
-    distance_metric = METRIC
-    max_num_of_clusters = None; max_dissimilarity_distance = None;
-    prototypes_optimization_thr = None; embedding_distance_metric = None;
-    if METRIC == "jaccard" and CHAR_TOKENIZATION == True and NGRAMS == 3:
-
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 700, 1000) 
-        max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.3, 0.8)
-        # prototypes_optimization_thr = trial.suggest_float("prototypes_optimization_thr", 0.1, 0.5)
-        embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", ["jaccard", "l_inf"])
+    distance_metric = DISSIMILARITY_DISTANCE
+    max_num_of_clusters = None
+    max_dissimilarity_distance = None
+    embedding_distance_metric = DISSIMILARITY_DISTANCE
+    # embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", [DISSIMILARITY_DISTANCE, "l_inf"])
     
-    elif METRIC == "jaccard" and CHAR_TOKENIZATION == False and NGRAMS == 3:
-    
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 700, 1000) 
-        max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.3, 0.8)
-        # prototypes_optimization_thr = trial.suggest_float("prototypes_optimization_thr", 0.1, 0.5)
-        embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", ["jaccard", "l_inf"])
-    
-    elif METRIC == "euclid_jaccard" and CHAR_TOKENIZATION == True and NGRAMS == 3:
-    
+    if CHAR_TOKENIZATION == True:
         max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 200, 900) 
         max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.1, 0.9)
-        # prototypes_optimization_thr = trial.suggest_float("prototypes_optimization_thr", 0.5, 0.25)
-        # embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", ["euclid_jaccard"])
-        embedding_distance_metric = "euclid_jaccard"
-
-    
-    elif METRIC == "euclid_jaccard" and CHAR_TOKENIZATION == True and NGRAMS == 2:
-    
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 200, 900) 
-        max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.1, 0.9)
-        # prototypes_optimization_thr = trial.suggest_float("prototypes_optimization_thr", 0.5, 0.25)
-        # embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", ["euclid_jaccard"])
-        embedding_distance_metric = "euclid_jaccard"
-
-    elif METRIC == "euclid_jaccard" and CHAR_TOKENIZATION == False and NGRAMS == 3:
-
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 500, 900) 
-        max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.6, 0.9)
-        # prototypes_optimization_thr = trial.suggest_float("prototypes_optimization_thr", 0.2, 0.6)
-        embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", ["euclid_jaccard"])
-
     else:
-        print("Metric not valid")
+        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 100, 900) 
+        max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.1, 0.9)
 
     
     # -- WTA algorithm
@@ -141,8 +110,6 @@ def objective(trial):
         embedding_distance_metric = embedding_distance_metric,
         ngrams = ngrams,
         char_tokenization = char_tokenization,
-        # prototypes_optimization_thr= prototypes_optimization_thr,
-        # max_num_of_comparisons = int((CORA.shape[0]*CORA.shape[0])/SPEED_UP_RATE)
         verbose_level = -1,
         disable_tqdm = True
     )

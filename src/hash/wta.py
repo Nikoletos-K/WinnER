@@ -33,7 +33,7 @@ class WTA:
 
         if vectorDim < self.K:
             self.K = vectorDim
-            warnings.warn("Window size greater than vector dimension")
+            # warnings.warn("Window size greater than vector dimension")
 
         C = np.zeros([self.number_of_permutations * numOfVectors], dtype=int)
         i=0;

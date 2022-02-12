@@ -49,12 +49,26 @@ from utils.metrics import *
 
 class WinnER:
 
-    def __init__(self, max_num_of_clusters, max_dissimilarity_distance, window_size, 
-                 number_of_permutations = 1, char_tokenization = True,
-                 embedding_distance_metric = 'jaccard', metric = 'kendal', similarity_vectors = 'ranked', 
-                 distance_metric = 'jaccard', prototypes_optimization_thr = None, ngrams = None, 
-                 similarity_threshold = None, num_of_threads = 16,
-                 verbose_level=0, rbo_p = 0.7, wta_m = 1, max_num_of_comparisons = 250000, disable_tqdm = False):
+    def __init__(self, 
+            max_num_of_clusters, 
+            max_dissimilarity_distance, 
+            window_size,  
+            number_of_permutations = 1, 
+            char_tokenization = True,
+            embedding_distance_metric = 'jaccard', 
+            metric = 'kendal', 
+            similarity_vectors = 'ranked', 
+            distance_metric = 'jaccard', 
+            prototypes_optimization_thr = None, 
+            ngrams = None, 
+            similarity_threshold = None, 
+            num_of_threads = 16,
+            verbose_level=0, 
+            rbo_p = 0.7, 
+            wta_m = 1, 
+            max_num_of_comparisons = 250000, 
+            disable_tqdm = False
+        ):
         '''
           Constructor
         '''
@@ -72,7 +86,10 @@ class WinnER:
         self.embedding_distance_metric = embedding_distance_metric
         self.ngrams = ngrams
         self.char_tokenization =  char_tokenization
-        self.prototypes_optimization_thr = max_dissimilarity_distance
+        if prototypes_optimization_thr == None:
+            self.prototypes_optimization_thr = max_dissimilarity_distance
+        else:
+            self.prototypes_optimization_thr = prototypes_optimization_thr
         self.selection_variance = None
         self.num_of_comparisons = 0
         self.verbose_level = verbose_level
