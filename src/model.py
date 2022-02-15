@@ -50,9 +50,9 @@ from utils.metrics import *
 class WinnER:
 
     def __init__(self, 
-            max_num_of_clusters, 
-            max_dissimilarity_distance, 
-            window_size,  
+            max_num_of_clusters = None, 
+            max_dissimilarity_distance = None, 
+            window_size = None,   
             number_of_permutations = 1, 
             char_tokenization = True,
             embedding_distance_metric = 'jaccard', 
@@ -694,6 +694,7 @@ class WinnER:
             self.max_num_of_clusters = params_dict["max_num_of_clusters"]
         if "max_dissimilarity_distance" in params_dict.keys():
             self.max_dissimilarity_distance = params_dict["max_dissimilarity_distance"]
+            self.prototypes_optimization_thr = params_dict["max_dissimilarity_distance"]
         if "window_size" in params_dict.keys():
             self.window_size = params_dict["window_size"]
         if "similarity_threshold" in params_dict.keys():

@@ -7,6 +7,7 @@ from sklearn import decomposition
 from tqdm.notebook import tqdm as tqdm
 from sklearn.decomposition import PCA 
 from sklearn.manifold import MDS
+import os
 
 def SpaceVisualization2D(X, prototypes, withPlotly=True, withText=False, decompositionMenthod='PCA'):
 
@@ -85,6 +86,7 @@ def SpaceVisualization3D(X, prototypes, withText=False, withPlotly=True, decompo
         )
         fig.update_traces(marker=dict(size=3))
         fig.show()
+        fig.write_image("SpaceVisualization3D_"+ decompositionMenthod +".png")
     else:
         fig = plt.figure(figsize=(12,10))
         ax = fig.add_subplot(111, projection='3d')
@@ -131,6 +133,7 @@ def SpaceVisualizationEmbeddings2D(X, labels, withPlotly=True, decompositionMent
             }
         )
         fig.show()
+        fig.write_image("SpaceVisualizationEmbeddings2D_"+ decompositionMenthod +".png")
     else:
         title= '2D Space Visualization with ' + decompositionMenthod
         fig, ax = plt.subplots(figsize=(12,10))
@@ -168,6 +171,7 @@ def SpaceVisualizationEmbeddings3D(X, labels, withPlotly=True, decompositionMent
         )
         fig.update_traces(marker=dict(size=4))
         fig.show()
+        fig.write_image("SpaceVisualizationEmbeddings3D_"+ decompositionMenthod +".png")
     else:
         fig = plt.figure(figsize=(12,10))
         ax = fig.add_subplot(111, projection='3d')
