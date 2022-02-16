@@ -170,6 +170,7 @@ def SpaceVisualizationEmbeddings3D(X, labels, withPlotly=True, decompositionMent
             }, margin=dict(l=0, r=0, b=0, t=0)
         )
         fig.update_traces(marker=dict(size=4))
+        fig.update_coloraxes(showscale=False)
         fig.show()
         fig.write_image("SpaceVisualizationEmbeddings3D_"+ decompositionMenthod +".png")
     else:
