@@ -1,4 +1,4 @@
-from tqdm.notebook import tqdm as tqdm
+from tqdm import tqdm as tqdm
 import math
 import numpy as np
 import networkx as nx
