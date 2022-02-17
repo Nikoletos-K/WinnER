@@ -79,10 +79,10 @@ def objective(trial):
     # embedding_distance_metric = trial.suggest_categorical("embedding_distance_metric", [DISSIMILARITY_DISTANCE, "l_inf"])
     
     if CHAR_TOKENIZATION == True:
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 100, CENSUS.shape[0]/2) 
+        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 20, CENSUS.shape[0]/2) 
         max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.05, 0.95)
     else:
-        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 100, CENSUS.shape[0]/2) 
+        max_num_of_clusters = trial.suggest_int("max_num_of_clusters", 20, CENSUS.shape[0]/2) 
         max_dissimilarity_distance = trial.suggest_float("max_dissimilarity_distance", 0.1, 0.95)
 
     
