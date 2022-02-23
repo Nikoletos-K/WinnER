@@ -67,7 +67,8 @@ class WinnER:
             rbo_p = 0.7, 
             wta_m = 1, 
             max_num_of_comparisons = 250000, 
-            disable_tqdm = False
+            disable_tqdm = False,
+            debug_stop = None
         ):
         '''
           Constructor
@@ -98,6 +99,7 @@ class WinnER:
         self.MAX_NUMBER_OF_COMPARISONS = max_num_of_comparisons
         self.disable_tqdm = disable_tqdm
         self.num_of_threads = num_of_threads
+        self.debug_stop = debug_stop
         
     def hackForDebug(self, labels_groundTruth, true_matrix):
         self.labels_groundTruth = labels_groundTruth
@@ -212,6 +214,9 @@ class WinnER:
                 SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
 
         self.wta_time = time.time() - wta_time
+
+        if self.debug_stop:
+            sys.exit()
 
         if self.verbose_level >=0 :
             print("\n# Finished in %.6s secs" % (wta_time))
