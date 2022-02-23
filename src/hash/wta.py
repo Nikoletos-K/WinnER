@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 from numpy.lib.twodim_base import diag
 from tqdm.notebook import tqdm as tqdm
-
+import logging
 
 class WTA:
     
@@ -16,7 +16,7 @@ class WTA:
         self.m = m
         self.disableTqdm = disableTqdm
     
-    def fit(self, vectors):
+    def hash(self, vectors):
         '''
           Winner Take All hash - Yagnik
           .............................
@@ -33,6 +33,7 @@ class WTA:
 
         if vectorDim < self.K:
             self.K = vectorDim
+            # logging.error("Window size greater than vector dimension")
             # warnings.warn("Window size greater than vector dimension")
 
         C = np.zeros([self.number_of_permutations * numOfVectors], dtype=int)

@@ -37,7 +37,7 @@ from cantor import q_encode
 # ---- Import from local files ---- #
 # --------------------------------- #
 
-from hash.wta import WTA, wtaSimilarity
+from hash.wta import WTA, wta_similarity
 from plot.dimension_reduction import SpaceVisualization2D, SpaceVisualization3D, SpaceVisualizationEmbeddings3D
 from plot.heatmap import myHeatmap
 from plot.confusion_matrix import create_ConfusionMatrix
@@ -191,7 +191,7 @@ class WinnER:
 
         wta_time = time.time()
         wta = WTA(self.window_size, self.number_of_permutations, self.wta_m, self.disable_tqdm)
-        self.HashedClusters, self.buckets, self.rankedVectors = wta.fit(self.Embeddings)
+        self.HashedClusters, self.buckets, self.rankedVectors = wta.hash(self.Embeddings)
         
         if self.verbose_level > 1:
             print("- WTA buckets: ")
@@ -544,7 +544,7 @@ class WinnER:
                 elif metric == 'rbo':
                     similarity_prob = rbo(vectors[v_vector_id], vectors[i_vector_id], self.rbo_p)
                 elif metric == 'wta':
-                    similarity_prob = wtaSimilarity(vectors[v_vector_id], vectors[i_vector_id])
+                    similarity_prob = wta_similarity(vectors[v_vector_id], vectors[i_vector_id])
                 elif metric == 'mannwhitneyu':
                     if np.array_equal(vectors[v_vector_id],vectors[i_vector_id]):
                         similarity_prob=1.0

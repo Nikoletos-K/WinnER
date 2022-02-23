@@ -6,7 +6,7 @@ import sys, os
 import csv
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from model import *
-from datasets.common.create_dataset import createDataset, createTrueLabels
+from datasets.common.create_dataset import process_dataset, create_true_labels
 from datetime import datetime
 
 # --- Optuna script on CDDB --- #
@@ -32,8 +32,8 @@ DATASET_NAME = 'CDDB'
 dataset_shuffled = CDDB.sample(frac=1).reset_index(drop=True)
 fields = list(CDDB.columns)
 fields.remove('Entity Id')
-data, true_matrix = createDataset(CDDB, CDDB_groundTruth, fields, 'Entity Id')
-labels_groundTruth, numOfObjWithoutDups, groups = createTrueLabels(CDDB['Entity Id'].tolist(),CDDB_groundTruth)            
+data, true_matrix = process_dataset(CDDB, CDDB_groundTruth, fields, 'Entity Id')
+labels_groundTruth, numOfObjWithoutDups, groups = create_true_labels(CDDB['Entity Id'].tolist(),CDDB_groundTruth)            
 data_length = [ len(x) for x in data ]
 
 # --- Results DF --- #

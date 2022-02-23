@@ -5,52 +5,51 @@ import networkx as nx
 
 from ..utils.text_process import preprocess
 
-def createDataset(cora_dataframe, true_values, fields, id_column, keepNone = False, preprocessEnabled=True):
+def process_dataset(dataset, true_values, fields, column_id, keep_none = False, enable_preprocess = True):
 
-    rawStr_col = []
+    raw_str_col = []
     index_to_id_dict = {}
-    sameEntities_dictionary = {}
 
     i=0
-    for _, row in tqdm(cora_dataframe.iterrows(), total = len(cora_dataframe), desc="Creating dataset from imput files", dynamic_ncols = True):
-        index_to_id_dict[int(row[id_column])] = i
-        rawStr = []
+    for _, row in tqdm(dataset.iterrows(), total = len(dataset), desc="Creating dataset from imput files", dynamic_ncols = True):
+        index_to_id_dict[int(row[column_id])] = i
+        raw_str = []
         for field in fields:
-            if (isna(row[field]) and keepNone == True) or (keepNone == False and not isna(row[field])):
-                rawStr.append(str(row[field]))
+            if (isna(row[field]) and keep_none == True) or (keep_none == False and not isna(row[field])):
+                raw_str.append(str(row[field]))
         i+=1
-        if preprocessEnabled:
-            rawStr_col.append(preprocess(rawStr))
+        if enable_preprocess:
+            raw_str_col.append(preprocess(raw_str))
         else:
-            rawStr_col.append(rawStr)
+            raw_str_col.append(raw_str)
             
-    num_of_records = len(cora_dataframe)
-    trueValues_matrix = np.zeros([num_of_records,num_of_records],dtype=np.int8)
+    num_of_records = len(dataset)
+    true_values_matrix = np.zeros([num_of_records,num_of_records],dtype=np.int8)
 
     for _, row in tqdm(true_values.iterrows(), total = len(true_values), desc="Creating groundtruth matrix", dynamic_ncols = True):  
-        trueValues_matrix[index_to_id_dict[row['id1']]][index_to_id_dict[row['id2']]] = 1
-        trueValues_matrix[index_to_id_dict[row['id2']]][index_to_id_dict[row['id1']]] = 1
+        true_values_matrix[index_to_id_dict[row['id1']]][index_to_id_dict[row['id2']]] = 1
+        true_values_matrix[index_to_id_dict[row['id2']]][index_to_id_dict[row['id1']]] = 1
 
-    return rawStr_col, trueValues_matrix
+    return raw_str_col, true_values_matrix
 
-def createTrueLabels(idColumn,groundTruth):
+def create_true_labels(column_id, ground_truth_values):
 
-    data = list(zip(groundTruth.id1, groundTruth.id2))
+    data = list(zip(ground_truth_values.id1, ground_truth_values.id2))
     G = nx.Graph()
     G.add_edges_from(data)
     groups = list(nx.connected_components(G))
     newId = len(groups)
-    labels_groundTruth = np.empty([len(idColumn)], dtype=int)
-    for tid in idColumn:
+    labels_ground_truth = np.empty([len(column_id)], dtype=int)
+    for tid in column_id:
         for g,g_index in zip(groups,range(0,len(groups),1)):
             if tid in g:
-                labels_groundTruth[tid] = g_index
+                labels_ground_truth[tid] = g_index
 
-        if labels_groundTruth[tid] not in range(0,len(groups),1):
-            labels_groundTruth[tid] = newId
+        if labels_ground_truth[tid] not in range(0,len(groups),1):
+            labels_ground_truth[tid] = newId
             newId+=1
             
-    return labels_groundTruth,newId,groups
+    return labels_ground_truth, newId, groups
 
 
 def isna(value):
