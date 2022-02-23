@@ -164,12 +164,12 @@ class WinnER:
                 print("\n- Mean variance in prototype selection: ", self.selection_variance)
 
         self.prototypes_time = time.time() - prototypes_time
-
+        
         if self.verbose_level >=0 :
             print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
             print("\n# Finished in %.6s secs" % (prototypes_time))
             print("\n")
-
+        
         if self.verbose_level >= 0:
             print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
             print("\n-> Creating Embeddings:")

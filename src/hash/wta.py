@@ -62,7 +62,7 @@ class WTA:
                 # else:
                 #     C[i*numOfVectors + j] = min(range(len(X_new[-self.K:])), key=X_new[-self.K:].__getitem__)
                     
-                self.bucketInsert(buckets, str(str(C[i*numOfVectors + j])+"-"+str(i)), v_index)
+                self.bucket_insert(buckets, str(str(C[i*numOfVectors + j])+"-"+str(i)), v_index)
                 j+=1;
             i+=1;
 
@@ -73,24 +73,24 @@ class WTA:
         permuted_vector = [vector[x] for x in permutation]
         return permuted_vector
 
-    def bucketInsert(self, buckets, hashCode, value):
+    def bucket_insert(self, buckets, hashCode, value):
         if hashCode not in buckets.keys():
             buckets[hashCode] = set()
         buckets[hashCode].add(value)
         return buckets
     
-def wtaSimilarity(vector1, vector2):
+def wta_similarity(vector1, vector2):
 
     PO=0
     for i in range(0,len(vector1),1):
         for j in range(0,i,1):
             ij_1 = vector1[i] - vector1[j]
             ij_2 = vector2[i] - vector2[j]
-            PO += wtaThreshold(ij_1*ij_2)
+            PO += wta_threshold(ij_1*ij_2)
             
     return PO
 
-def wtaThreshold(x):    
+def wta_threshold(x):    
     
     if x>0:
         return 1
