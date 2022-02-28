@@ -72,7 +72,22 @@ else:
     db_name = "WinnER_Experiments_v2"
 print("Version: " + version)
 
-dataset_shuffled = dataset.sample(frac=1).reset_index(drop=True)
+title = DISSIMILARITY_DISTANCE + "_" + TOKENIZATION_LEVEL + "_" + str(NGRAMS)  + "_" + "v" + version + "_" + DATASET
+storage_name = "sqlite:///{}.db".format(db_name)
+study_name = title  # Unique identifier of the study.
+print("Study name: " + study_name)
+db_path = "db"
+csv_path = "csv"
+df_path = "df"
+
+
+if os.path.exists(df_path + "/" + study_name + "DF" + ".pkl"):
+    dataset_shuffled = pd.read_pickle(df_path + "/" + study_name + "DF" + ".pkl")  
+    print("Using an existing shuffled data set: " + df_path + "/" + study_name + "DF" + ".pkl")
+else:
+    dataset_shuffled = dataset.sample(frac=1).reset_index(drop=True)
+    print("Shuffled data set")
+
 
 # --- Columns based on NAN values --- #
 na_df = (dataset.isnull().sum() / len(dataset)) * 100
@@ -93,13 +108,7 @@ headers = ['trial_id','max_num_of_clusters','max_dissimilarity_distance','simila
              'Accuracy','Precision','Recall','F1','Time']
 
 results_dataframe = pd.DataFrame(columns = headers)
-title = DISSIMILARITY_DISTANCE + "_" + TOKENIZATION_LEVEL + "_" + str(NGRAMS)  + "_" + "v" + version + "_" + DATASET
-storage_name = "sqlite:///{}.db".format(db_name)
-study_name = title  # Unique identifier of the study.
-print("Study name: " + study_name)
-db_path = "db"
-csv_path = "csv"
-df_path = "df"
+dataset_shuffled.to_pickle(df_path + "/" + study_name + "DF" + ".pkl")
 
 if not os.path.exists(csv_path + "/" + title + ".csv"):
     with open("csv/" + title + ".csv", 'w+') as f:
