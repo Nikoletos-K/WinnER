@@ -38,18 +38,18 @@ def create_true_labels(column_id, ground_truth_values):
     G = nx.Graph()
     G.add_edges_from(data)
     groups = list(nx.connected_components(G))
-    newId = len(groups)
+    new_id = len(groups)
     labels_ground_truth = np.empty([len(column_id)], dtype=int)
     for tid in column_id:
-        for g,g_index in zip(groups,range(0,len(groups),1)):
+        for g, g_index in zip(groups,range(0,len(groups),1)):
             if tid in g:
                 labels_ground_truth[tid] = g_index
 
         if labels_ground_truth[tid] not in range(0,len(groups),1):
-            labels_ground_truth[tid] = newId
-            newId+=1
+            labels_ground_truth[tid] = new_id
+            new_id += 1
             
-    return labels_ground_truth, newId, groups
+    return labels_ground_truth, new_id, groups
 
 
 def isna(value):

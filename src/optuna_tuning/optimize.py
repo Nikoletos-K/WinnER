@@ -60,9 +60,46 @@ elif DATASET == "CENSUS":
 elif DATASET == "CDDB":
     dataset_ground_truth = pd.read_csv(os.path.abspath("../../data/cddbIdDuplicates.csv"), sep='/00000', engine='python', header=None,names=['id1','id2'])
     dataset = pd.read_csv(os.path.abspath("../../data/cddbProfiles.csv"), sep='/00000', engine='python')
+elif DATASET == "SIGMOD2022_X1":
+    Y1 = pd.read_csv(os.path.abspath("../../data/Y1.csv"), sep = ',')
+    X1 = pd.read_csv(os.path.abspath("../../data/X1.csv"), sep = ',')
+    id_to_index = {}
+    new_id = []
+    for r in X1.iterrows():
+        id_to_index[r[1]['id']] = r[0]
+        new_id.append(r[0])
+    X1[column_id] = new_id
+    new_id1 = []
+    new_id2 = []
+    for r in Y1.iterrows():
+        new_id1.append(id_to_index[r[1]['id1']])
+        new_id2.append(id_to_index[r[1]['id2']])
+    Y1['id1'] = new_id1
+    Y1['id2'] = new_id2
+    dataset_ground_truth = Y1
+    dataset = X1
+elif DATASET == "SIGMOD2022_X2":
+    Y2 = pd.read_csv(os.path.abspath("../../data/Y2.csv"), sep = ',')
+    X2 = pd.read_csv(os.path.abspath("../../data/X2.csv"), sep = ',')
+    id_to_index = {}
+    new_id = []
+    for r in X2.iterrows():
+        id_to_index[r[1]['id']] = r[0]
+        new_id.append(r[0])
+    X2[column_id] = new_id
+    new_id1 = []
+    new_id2 = []
+    for r in Y2.iterrows():
+        new_id1.append(id_to_index[r[1]['id1']])
+        new_id2.append(id_to_index[r[1]['id2']])
+    Y2['id1'] = new_id1
+    Y2['id2'] = new_id2
+    dataset_ground_truth = Y2
+    dataset = X2
 else:
     logging.error("Available datasets: CORA, CDDB, CENSUS")
     sys.exit()
+
 SPEED_UP_RATE = 9
 if "-v" in set(sys.argv):
     version = sys.argv[sys.argv.index("-v") + 1]
@@ -179,7 +216,7 @@ def objective(trial):
     row = [
         trial_id, max_num_of_clusters,max_dissimilarity_distance,similarity_threshold,
         window_size,metric,similarity_vectors,embedding_distance_metric,distance_metric,
-        number_of_permutations,ngrams,char_tokenization, 
+        number_of_permutations,ngrams,char_tokenization,
         model.num_of_comparisons, model.diffObjectsComparedSuccess, model.sameObjectsCompared, model.sameObjectsComparedSuccess,
         model.selection_variance,model.selected_numOfPrototypes,len(model.buckets.keys()),
         model.prototypes_time, model.embeddings_time, model.wta_time, model.similarity_time, acc, precision, recall, f1, exec_time]
@@ -189,7 +226,7 @@ def objective(trial):
         writer.writerow(row)
         f.close()
 
-    return f1
+    return recall
 
 study_name = title  # Unique identifier of the study.
 study = optuna.create_study(directions=["maximize"], study_name=study_name, storage=storage_name, load_if_exists=True)
@@ -198,4 +235,3 @@ study.optimize(objective, n_trials=num_of_trials, show_progress_bar=True)
 print("Optuna trials finished")
 results_dataframe.to_pickle(df_path + "/" + study_name + datetime.now().strftime("_%m%d%H%M") + ".pkl")
 print("All results saved as dataframe to file " + study_name + datetime.now().strftime("_%m%d%H%M") + ".pkl")
-
