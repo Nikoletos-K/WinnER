@@ -68,6 +68,7 @@ class WinnER:
             wta_m = 1, 
             max_num_of_comparisons = 250000, 
             disable_tqdm = False,
+            enable_blocking = True,
             debug_stop = None
         ):
         '''
@@ -99,6 +100,7 @@ class WinnER:
         self.MAX_NUMBER_OF_COMPARISONS = max_num_of_comparisons
         self.disable_tqdm = disable_tqdm
         self.num_of_threads = num_of_threads
+        self.enable_blocking = enable_blocking
         self.debug_stop = debug_stop
         
     def hackForDebug(self, labels_groundTruth, true_matrix):
@@ -183,44 +185,48 @@ class WinnER:
         
         self.embeddings_time = time.time() - embeddings_time
 
-        if self.verbose_level >=0 :
+        if self.verbose_level >=0:
             print("\n# Finished in %.6s secs" % (embeddings_time))
             print("\n")
 
-        if self.verbose_level >=0 :
-            print("###########################################################\n# > 3. WTA Hashing                                        #\n###########################################################\n")
-            print("\n-> Creating WTA Buckets:")
+        if self.enable_blocking:
 
-        wta_time = time.time()
-        wta = WTA(self.window_size, self.number_of_permutations, self.wta_m, self.disable_tqdm)
-        self.HashedClusters, self.buckets, self.rankedVectors = wta.hash(self.Embeddings)
+            if self.verbose_level >= 0:
+                print("###########################################################\n# > 3. WTA Hashing                                        #\n###########################################################\n")
+                print("\n-> Creating WTA Buckets:")
+
+            wta_time = time.time()
+            wta = WTA(self.window_size, self.number_of_permutations, self.wta_m, self.disable_tqdm)
+            self.HashedClusters, self.buckets, self.rankedVectors = wta.hash(self.Embeddings)
+            
+            if self.verbose_level > 1:
+                print("- WTA buckets: ")
+                for key in self.buckets.keys():
+                    print(key," -> ",self.buckets[key])
+            
+            if self.verbose_level >= 0:
+                print("\n- WTA number of buckets: ", len(self.buckets.keys()))
+            
+            if self.verbose_level > 1:
+                print("\n- WTA RankedVectors after permutation:")
+                print(self.rankedVectors)
+
+            if self.verbose_level > 0:
+                if self.similarity_vectors == 'ranked':
+                    SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_groundTruth)
+                elif self.similarity_vectors == 'initial':
+                    SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
+
+            self.wta_time = time.time() - wta_time
+
+            if self.debug_stop:
+                sys.exit()
+
+            if self.verbose_level >=0 :
+                print("\n# Finished in %.6s secs" % (wta_time))
+                print("\n")
         
-        if self.verbose_level > 1:
-            print("- WTA buckets: ")
-            for key in self.buckets.keys():
-                print(key," -> ",self.buckets[key])
-        
-        if self.verbose_level >=0 :
-            print("\n- WTA number of buckets: ", len(self.buckets.keys()))
-        
-        if self.verbose_level > 1:
-            print("\n- WTA RankedVectors after permutation:")
-            print(self.rankedVectors)
 
-        if self.verbose_level > 0:
-            if self.similarity_vectors == 'ranked':
-                SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_groundTruth)
-            elif self.similarity_vectors == 'initial':
-                SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
-
-        self.wta_time = time.time() - wta_time
-
-        if self.debug_stop:
-            sys.exit()
-
-        if self.verbose_level >=0 :
-            print("\n# Finished in %.6s secs" % (wta_time))
-            print("\n")
 
         if self.verbose_level >=0 :
             print("###########################################################\n# > 4. Similarity checking                                #\n###########################################################\n")
@@ -228,15 +234,18 @@ class WinnER:
 
         similarity_time = time.time()
 
-        if self.similarity_vectors == 'ranked':
-            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors)
-        elif self.similarity_vectors == 'initial':
-            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
+        if self.enable_blocking:
+            if self.similarity_vectors == 'ranked':
+                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors)
+            elif self.similarity_vectors == 'initial':
+                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
+            else:
+                warnings.warn("similarity_vectors: Available options are: ranked, initial")
+
+            if self.mapping == None and self.mapping_matrix == None:
+                return None
         else:
-            warnings.warn("similarity_vectors: Available options are: ranked, initial")
-        
-        if self.mapping == None and self.mapping_matrix == None:
-            return None
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.Embeddings)
 
         if self.verbose_level > 1:
             print("- Similarity mapping in a matrix")
@@ -494,17 +503,112 @@ class WinnER:
     #                 3. Similarity checking                            #
     #####################################################################
 
+    def SimilarityEvaluationWithoutHashing(self, vectors):
+
+        num_of_vectors = vectors.shape[0]
+        vector_x_dimension = vectors.shape[1]
+        self.mapping_matrix = np.zeros([num_of_vectors,num_of_vectors],dtype=np.int8)
+        self.similarityProb_matrix = np.empty([num_of_vectors,num_of_vectors],dtype=np.float)* np.nan
+        self.mapping = {}
+        
+        self.num_of_comparisons = 0
+        self.diffObjectsComparedSuccess = 0
+        self.difObjectsCompared = 0
+        self.sameObjectsCompared = 0
+        self.sameObjectsComparedSuccess = 0
+        self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
+
+        metric = self.metric
+
+        for v_index in range(0,num_of_vectors,1):
+            v_vector_id = vectors[v_index]
+
+            # Loop to all the other
+            for i_index in range(v_index+1,num_of_vectors,1):
+                i_vector_id = vectors[i_index]
+
+                cantor_unique_index = q_encode(v_vector_id, i_vector_id)
+                if cantor_unique_index in self.bloomFilter:
+                    continue
+                else:
+                    self.bloomFilter.add(cantor_unique_index)
+
+                self.num_of_comparisons += 1
+
+                if self.num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
+                    warnings.warn("Upper bound of comparisons has been achieved", DeprecationWarning)
+                
+                if metric == None or metric == 'kendal':  # Simple Kendal tau metric
+                    similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'customKendal':  # Custom Kendal tau
+                    numOf_discordant_pairs = _kendall_dis(vectors[v_vector_id].astype('intp'), vectors[i_vector_id].astype('intp'))
+                    similarity_prob = (2*numOf_discordant_pairs) / (vector_x_dimension*(vector_x_dimension-1))
+                elif metric == 'jaccard':
+                    similarity_prob = jaccard_score(vectors[v_vector_id], vectors[i_vector_id], average='micro')
+                elif metric == 'cosine':
+                    similarity_prob = cosine_similarity(np.array(vectors[v_vector_id]).reshape(1, -1), np.array(vectors[i_vector_id]).reshape(1, -1))
+                elif metric == 'pearson':
+                    similarity_prob, _ = pearsonr(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'spearman':
+                    similarity_prob, _ = spearmanr(vectors[v_vector_id], vectors[i_vector_id], nan_policy='omit')
+                elif metric == 'spearmanf':
+                    similarity_prob = 1-spearman_footrule_distance(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'hamming':
+                    similarity_prob, _ = hamming(vectors[v_vector_id].astype('intp'), vectors[i_vector_id].astype('intp'))
+                elif metric == 'kruskal':
+                    if np.array_equal(vectors[v_vector_id],vectors[i_vector_id]):
+                        similarity_prob=1.0
+                    else:
+                        _,similarity_prob = kruskal(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'ndcg_score':
+                    similarity_prob, _ = ndcg_score(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'rbo':
+                    similarity_prob = rbo(vectors[v_vector_id], vectors[i_vector_id], self.rbo_p)
+                elif metric == 'wta':
+                    similarity_prob = wta_similarity(vectors[v_vector_id], vectors[i_vector_id])
+                elif metric == 'mannwhitneyu':
+                    if np.array_equal(vectors[v_vector_id],vectors[i_vector_id]):
+                        similarity_prob=1.0
+                    else:
+                        _,similarity_prob = mannwhitneyu(vectors[v_vector_id], vectors[i_vector_id])
+                else:
+                    warnings.warn("Similarity not exists, available similarity metrics: kendal, rbo, spearman, pearson")
+
+
+                self.similarityProb_matrix[v_vector_id][i_vector_id] = similarity_prob
+                self.similarityProb_matrix[i_vector_id][v_vector_id] = similarity_prob
+                
+                if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
+                    self.sameObjectsCompared += 1
+
+                if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
+                    self.difObjectsCompared += 1
+
+                if similarity_prob > self.similarity_threshold:
+                    if v_vector_id not in self.mapping.keys():
+                        self.mapping[v_vector_id] = []
+                    self.mapping[v_vector_id].append(i_vector_id)  # insert into mapping
+                    self.mapping_matrix[v_vector_id][i_vector_id] = 1  # inform prediction matrix
+                    self.mapping_matrix[i_vector_id][v_vector_id] = 1  # inform prediction matrix
+                    if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
+                        self.sameObjectsComparedSuccess += 1
+                elif similarity_prob <= self.similarity_threshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
+                    self.diffObjectsComparedSuccess += 1
+
+        return self.mapping, np.triu(self.mapping_matrix)
+
+
     def SimilarityEvaluationBucket(self, bucket_vectors, lock):
         logging.info('Bucket checking')
         metric = self.metric
         vectors = self.Embeddings
-        vectorDim = vectors.shape[1]
-        numOfVectors = len(bucket_vectors)
-        for v_index in range(0,numOfVectors,1):
+        vector_x_dimension = vectors.shape[1]
+        num_of_vectors = len(bucket_vectors)
+        for v_index in range(0,num_of_vectors,1):
             v_vector_id = bucket_vectors[v_index]
 
             # Loop to all the other
-            for i_index in range(v_index+1,numOfVectors,1):
+            for i_index in range(v_index+1,num_of_vectors,1):
                 i_vector_id = bucket_vectors[i_index]
 
                 cantor_unique_index = q_encode(v_vector_id, i_vector_id)
@@ -526,7 +630,7 @@ class WinnER:
                     similarity_prob, p_value = kendalltau(vectors[v_vector_id], vectors[i_vector_id])
                 elif metric == 'customKendal':  # Custom Kendal tau
                     numOf_discordant_pairs = _kendall_dis(vectors[v_vector_id].astype('intp'), vectors[i_vector_id].astype('intp'))
-                    similarity_prob = (2*numOf_discordant_pairs) / (vectorDim*(vectorDim-1))
+                    similarity_prob = (2*numOf_discordant_pairs) / (vector_x_dimension*(vector_x_dimension-1))
                 elif metric == 'jaccard':
                     similarity_prob = jaccard_score(vectors[v_vector_id], vectors[i_vector_id], average='micro')
                 elif metric == 'cosine':
@@ -584,9 +688,9 @@ class WinnER:
 
     def SimilarityEvaluation(self, buckets, vectors):
 
-        numOfVectors = vectors.shape[0]
-        self.mapping_matrix = np.zeros([numOfVectors,numOfVectors],dtype=np.int8)
-        self.similarityProb_matrix = np.empty([numOfVectors,numOfVectors],dtype=np.float)* np.nan
+        num_of_vectors = vectors.shape[0]
+        self.mapping_matrix = np.zeros([num_of_vectors,num_of_vectors],dtype=np.int8)
+        self.similarityProb_matrix = np.empty([num_of_vectors,num_of_vectors],dtype=np.float)* np.nan
         self.mapping = {}
         
         self.num_of_comparisons = 0
