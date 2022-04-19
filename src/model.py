@@ -55,12 +55,12 @@ class WinnER:
             window_size = None,   
             number_of_permutations = 1, 
             char_tokenization = True,
-            embedding_distance_metric = 'jaccard', 
+            embedding_distance_metric = 'euclid_jaccard', 
             metric = 'kendal', 
             similarity_vectors = 'ranked', 
-            distance_metric = 'jaccard', 
+            distance_metric = 'euclid_jaccard', 
             prototypes_optimization_thr = None, 
-            ngrams = None, 
+            ngrams = 3,
             similarity_threshold = None, 
             num_of_threads = 16,
             verbose_level=0, 
@@ -103,8 +103,8 @@ class WinnER:
         self.enable_blocking = enable_blocking
         self.debug_stop = debug_stop
         
-    def hackForDebug(self, labels_groundTruth, true_matrix):
-        self.labels_groundTruth = labels_groundTruth
+    def hackForDebug(self, labels_ground_truth, true_matrix):
+        self.labels_ground_truth = labels_ground_truth
         self.true_matrix = true_matrix
 
     def fit(self, X):
@@ -213,9 +213,9 @@ class WinnER:
 
             if self.verbose_level > 0:
                 if self.similarity_vectors == 'ranked':
-                    SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_groundTruth)
+                    SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_ground_truth)
                 elif self.similarity_vectors == 'initial':
-                    SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_groundTruth)
+                    SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_ground_truth)
 
             self.wta_time = time.time() - wta_time
 
