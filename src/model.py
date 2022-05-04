@@ -69,7 +69,7 @@ class WinnER:
             max_num_of_comparisons = 250000, 
             disable_tqdm = False,
             enable_blocking = True,
-            debug_stop = None
+            debug_stop = None   
         ):
         '''
           Constructor
