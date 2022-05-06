@@ -116,7 +116,7 @@ class WinnER:
         self.enable_blocking = enable_blocking
         self.debug_stop = debug_stop
         
-    def groundtruth(self, labels_ground_truth, true_matrix):
+    def groundtruth(self, true_matrix, labels_ground_truth = None):
 
         self._labels_ground_truth = labels_ground_truth
         self._true_matrix = true_matrix
@@ -150,7 +150,7 @@ class WinnER:
             print("\n")
 
         if self.verbose_level >=0 :
-            print("###########################################################\n# > 1. Prototype selection phase                          #\n###########################################################\n")
+            print("\n###########################################################\n# > 1. Prototype selection phase                          #\n###########################################################\n")
             print("\n-> Finding prototypes and representatives of each cluster:")
         
         prototypes_time = time.time()
@@ -216,9 +216,9 @@ class WinnER:
                 print(self.ranked_vectors)
 
             if self.verbose_level > 0:
-                if self._gt_provided and self.similarity_vectors == 'ranked':
+                if self._labels_ground_truth and self.similarity_vectors == 'ranked':
                     SpaceVisualizationEmbeddings3D(self.ranked_vectors, self._labels_ground_truth)
-                elif self._gt_provided and self.similarity_vectors == 'initial':
+                elif self._labels_ground_truth and self.similarity_vectors == 'initial':
                     SpaceVisualizationEmbeddings3D(self.embeddings, self._labels_ground_truth)
 
             self.wta_time = time.time() - wta_time
