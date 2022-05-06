@@ -1,16 +1,16 @@
 import string
 
-def preprocess(row):
+def preprocess(s):
 
-    paper_str = " ".join(row)
+    new_s = " ".join(s)
 
     # Lower letters 
-    paper_str = paper_str.lower()
+    new_s = new_s.lower()
     
     # Remove unwanted chars 
-    paper_str = paper_str.replace("\n", " ").replace("/z", " ")
+    new_s = new_s.replace("\n", " ").replace("/z", " ")
     
     # Remove pancutation     
-    paper_str = paper_str.translate(str.maketrans('', '', string.punctuation))
+    new_s = new_s.translate(str.maketrans('', '', string.punctuation))
     
-    return str(paper_str)
+    return str(new_s)

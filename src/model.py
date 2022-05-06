@@ -41,13 +41,25 @@ from hash.wta import WTA, wta_similarity
 from plot.dimension_reduction import SpaceVisualization2D, SpaceVisualization3D, SpaceVisualizationEmbeddings3D
 from plot.heatmap import myHeatmap
 from plot.confusion_matrix import create_ConfusionMatrix
-from utils.metrics import *
+# from utils.metrics import *
+from utils.tokenizer import Tokenizer
+from utils.error_messages import *
 
 # --------------------------------- #
 # ----    Main model class     ---- #
 # --------------------------------- #
 
 class WinnER:
+
+    _data_size = 0
+    _string_array = None
+    _pair_dict = dict()
+    _string_index_map = None
+    _input_strings = None
+    _num_of_comparisons = 0
+    _labels_ground_truth = None 
+    _true_matrix = None
+    _gt_provided = False
 
     def __init__(self, 
             max_num_of_clusters = None, 
@@ -63,7 +75,7 @@ class WinnER:
             ngrams = 3,
             similarity_threshold = None, 
             num_of_threads = 16,
-            verbose_level=0, 
+            verbose_level = 0, 
             rbo_p = 0.7, 
             wta_m = 1, 
             max_num_of_comparisons = 250000, 
@@ -74,13 +86,14 @@ class WinnER:
         '''
           Constructor
         '''
+
+        # Model hyper-parameters
         self.max_num_of_clusters = max_num_of_clusters
-        self.pairDictionary = dict()
         self.max_dissimilarity_distance = max_dissimilarity_distance
         self.window_size = window_size
-        self.S_set = None
-        self.S_index = None
         self.similarity_threshold = similarity_threshold
+
+
         self.metric = metric
         self.similarity_vectors = similarity_vectors
         self.number_of_permutations = number_of_permutations
@@ -93,7 +106,7 @@ class WinnER:
         else:
             self.prototypes_optimization_thr = prototypes_optimization_thr
         self.selection_variance = None
-        self.num_of_comparisons = 0
+        self._num_of_comparisons = 0
         self.verbose_level = verbose_level
         self.rbo_p = rbo_p
         self.wta_m = wta_m
@@ -103,46 +116,37 @@ class WinnER:
         self.enable_blocking = enable_blocking
         self.debug_stop = debug_stop
         
-    def hackForDebug(self, labels_ground_truth, true_matrix):
-        self.labels_ground_truth = labels_ground_truth
-        self.true_matrix = true_matrix
+    def groundtruth(self, labels_ground_truth, true_matrix):
 
-    def fit(self, X):
+        self._labels_ground_truth = labels_ground_truth
+        self._true_matrix = true_matrix
+        self._gt_provided = True
+
+    def fit(self, input_strings):
         """
-          Fit the classifier from the training dataset.
-          Parameters
-          ----------
-          X : Training data.
+          Models main method
+          ---
+          Parameters:
+          - input_strings : ER data
           
-          Returns
-          -------
-          self : The fitted classifier.
+          ### Returns
+          self : The fitted model.
         """
 
         if self.verbose_level >=0 :
             print("\n#####################################################################\n#                           .~  WinnER  ~.                          #\n#####################################################################\n")
 
-        if isinstance(X, list):
-            input_strings = X
-        else:
-            input_strings = list(X)
+        _data_size = len(input_strings)
 
-        inputSize = len(input_strings)
-        self.initialS_set = np.array(input_strings,dtype=object)
-        self.S_set = np.array(input_strings,dtype=object)
-        if (self.distance_metric == 'jaccard' or self.distance_metric == 'euclid_jaccard') and self.char_tokenization == False:
-            for i in range(0,len(input_strings)):
-                self.S_set[i] = set(nltk.ngrams(nltk.word_tokenize(self.S_set[i]), n=self.ngrams))
-        elif (self.distance_metric == 'jaccard' or self.distance_metric == 'euclid_jaccard') and self.char_tokenization == True:
-            for i in range(0,len(input_strings)):
-                self.S_set[i] = set(nltk.ngrams(self.S_set[i], n=self.ngrams))
-
-        self.S_index = np.arange(0,len(input_strings),1)
-        self.bloomFilterMaxElemnets = inputSize*inputSize
+        self._input_strings = np.array(input_strings,dtype=object)
+        tok = Tokenizer(self.ngrams, self.char_tokenization)
+        self._string_array = tok.process(input_strings)
+        self._string_index_map = np.arange(0,len(input_strings),1)
+        self.bloom_filter_size = _data_size*_data_size
 
         if self.verbose_level > 1:
             print("\n\nString positions are:")
-            print(self.S_index)
+            print(self._string_index_map)
             print("\n")
 
         if self.verbose_level >=0 :
@@ -150,27 +154,27 @@ class WinnER:
             print("\n-> Finding prototypes and representatives of each cluster:")
         
         prototypes_time = time.time()
-        self.prototypeArray,self.selected_numOfPrototypes = self.PrototypeSelection(self.S_index,self.max_num_of_clusters, self.max_dissimilarity_distance)
-        self.embeddingDim = self.prototypeArray.size
+        self.prototype_array, self.num_of_prototypes = self.PrototypeSelection(self._string_index_map,self.max_num_of_clusters, self.max_dissimilarity_distance)
+        self.embedding_dimension = self.prototype_array.size
         
         if self.verbose_level >= 1:
 
             if self.verbose_level >= 2:
                 print("\n- Prototypes selected:")
-                print(self.prototypeArray)
-            heatmapData = []
-            for pr in self.prototypeArray:
+                print(self.prototype_array)
+            heatmap_data = []
+            for pr in self.prototype_array:
                 if self.verbose_level >= 2:
-                    print(pr," -> ",self.initialS_set[pr])
-                heatmapData.append(self.S_set[pr])            
-            if self.selected_numOfPrototypes > 2:
-                self.selection_variance = myHeatmap(self.prototypeArray,self.metric,self.dissimilarityDistance)
+                    print(pr," -> ",self._input_strings[pr])
+                heatmap_data.append(self._string_array[pr])            
+            if self.num_of_prototypes > 2:
+                self.selection_variance = myHeatmap(self.prototype_array,self.metric,self.dissimilarity_distance)
                 print("\n- Mean variance in prototype selection: ", self.selection_variance)
 
         self.prototypes_time = time.time() - prototypes_time
         
         if self.verbose_level >=0 :
-            print("\n- Final number of prototypes: ",self.selected_numOfPrototypes )
+            print("\n- Final number of prototypes: ",self.num_of_prototypes )
             print("\n# Finished in %.6s secs" % (prototypes_time))
             print("\n")
         
@@ -178,10 +182,10 @@ class WinnER:
             print("###########################################################\n# > 2. Embeddings based on the Vantage objects            #\n###########################################################\n")
             print("\n-> Creating Embeddings:")
         embeddings_time = time.time()
-        self.Embeddings = self.CreateVantageEmbeddings(self.S_index, self.prototypeArray)
+        self.embeddings = self.CreateVantageEmbeddings(self._string_index_map, self.prototype_array)
        
         if self.verbose_level > 0:
-            SpaceVisualization2D(self.Embeddings, self.prototypeArray)        
+            SpaceVisualization2D(self.embeddings, self.prototype_array)        
         
         self.embeddings_time = time.time() - embeddings_time
 
@@ -197,7 +201,7 @@ class WinnER:
 
             wta_time = time.time()
             wta = WTA(self.window_size, self.number_of_permutations, self.wta_m, self.disable_tqdm)
-            self.HashedClusters, self.buckets, self.rankedVectors = wta.hash(self.Embeddings)
+            self.buckets, self.ranked_vectors = wta.hash(self.embeddings)
             
             if self.verbose_level > 1:
                 print("- WTA buckets: ")
@@ -209,13 +213,13 @@ class WinnER:
             
             if self.verbose_level > 1:
                 print("\n- WTA RankedVectors after permutation:")
-                print(self.rankedVectors)
+                print(self.ranked_vectors)
 
             if self.verbose_level > 0:
-                if self.similarity_vectors == 'ranked':
-                    SpaceVisualizationEmbeddings3D(self.rankedVectors, self.labels_ground_truth)
-                elif self.similarity_vectors == 'initial':
-                    SpaceVisualizationEmbeddings3D(self.Embeddings, self.labels_ground_truth)
+                if self._gt_provided and self.similarity_vectors == 'ranked':
+                    SpaceVisualizationEmbeddings3D(self.ranked_vectors, self._labels_ground_truth)
+                elif self._gt_provided and self.similarity_vectors == 'initial':
+                    SpaceVisualizationEmbeddings3D(self.embeddings, self._labels_ground_truth)
 
             self.wta_time = time.time() - wta_time
 
@@ -226,8 +230,6 @@ class WinnER:
                 print("\n# Finished in %.6s secs" % (wta_time))
                 print("\n")
         
-
-
         if self.verbose_level >=0 :
             print("###########################################################\n# > 4. Similarity checking                                #\n###########################################################\n")
             print("\n-> Similarity checking:")
@@ -236,23 +238,24 @@ class WinnER:
 
         if self.enable_blocking:
             if self.similarity_vectors == 'ranked':
-                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.rankedVectors)
+                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.ranked_vectors)
             elif self.similarity_vectors == 'initial':
-                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.Embeddings)
+                self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.buckets, self.embeddings)
             else:
                 warnings.warn("similarity_vectors: Available options are: ranked, initial")
 
             if self.mapping == None and self.mapping_matrix == None:
                 return None
         else:
-            self.mapping, self.mapping_matrix = self.SimilarityEvaluation(self.Embeddings)
+            print(self.embeddings)
+            self.mapping, self.mapping_matrix = self.SimilarityEvaluationWithoutHashing(self.embeddings)
 
         if self.verbose_level > 1:
             print("- Similarity mapping in a matrix")
             print(self.mapping_matrix)
         
         if self.verbose_level > 0:
-            print("Total comparisons: ", self.num_of_comparisons)
+            print("Total comparisons: ", self._num_of_comparisons)
             print(" -> between same objects: ", self.sameObjectsCompared )
             print(" -> between same objects with success: ", self.sameObjectsComparedSuccess)
             print(" -> between different objects: ", self.difObjectsCompared)
@@ -266,24 +269,25 @@ class WinnER:
 
         return self
 
-    def dissimilarityDistance(self, str1, str2):
-        if self.verbose_level > 2:
-            print("-> ", self.initialS_set[str1])
-            print("--> ", self.initialS_set[str2])
+    def dissimilarity_distance(self, str1, str2):
 
-        if frozenset([str1,str2]) in self.pairDictionary.keys():
-            return self.pairDictionary[frozenset([str1,str2])]
+        if self.verbose_level > 2:
+            print("-> ", self._input_strings[str1])
+            print("--> ", self._input_strings[str2])
+
+        if frozenset([str1,str2]) in self._pair_dict.keys():
+            return self._pair_dict[frozenset([str1,str2])]
         else:
             if self.distance_metric == 'edit':
-                distance = editdistance.eval(self.S_set[str1],self.S_set[str2])
+                distance = editdistance.eval(self._string_array[str1],self._string_array[str2])
             elif self.distance_metric == 'jaccard':
-                distance = jaccard_distance(self.S_set[str1],self.S_set[str2])
+                distance = jaccard_distance(self._string_array[str1],self._string_array[str2])
             elif self.distance_metric == 'euclid_jaccard':
-                distance = math.sqrt(jaccard_distance(self.S_set[str1],self.S_set[str2]))                
+                distance = math.sqrt(jaccard_distance(self._string_array[str1],self._string_array[str2]))                
             else:
                 warnings.warn("Available metrics for space creation: edit, jaccard, euclid_jaccard ")
 
-            self.pairDictionary[frozenset([str1,str2])] = distance
+            self._pair_dict[frozenset([str1,str2])] = distance
             
             if self.verbose_level > 2:
                 print(distance)
@@ -319,12 +323,12 @@ class WinnER:
                     C[i] = j         # store in C that i-string belongs to cluster j
                     Clusters[j].append(S[i])
                     break
-                elif r[1][j] == None and (self.dissimilarityDistance(S[i],r[0][j]) <= d):  # case empty second representative
+                elif r[1][j] == None and (self.dissimilarity_distance(S[i],r[0][j]) <= d):  # case empty second representative
                     r[1][j] = S[i]                                             # and ED of representative 1  smaller than i-th string
                     C[i] = j
                     Clusters[j].append(S[i])
                     break
-                elif (r[0][j] != None and r[1][j] != None) and (self.dissimilarityDistance(S[i],r[0][j]) + self.dissimilarityDistance(S[i],r[1][j])) <= d:
+                elif (r[0][j] != None and r[1][j] != None) and (self.dissimilarity_distance(S[i],r[0][j]) + self.dissimilarity_distance(S[i],r[1][j])) <= d:
                     C[i] = j
                     Clusters[j].append(S[i])
                     break
@@ -379,12 +383,12 @@ class WinnER:
         distances_vector = dict()
 
         if len(clusterSet) > 2:
-            rep_distance = self.dissimilarityDistance(right_rep,left_rep)
+            rep_distance = self.dissimilarity_distance(right_rep,left_rep)
 
             for str_inCluster in range(0, len(clusterSet)):
                 if clusterSet[str_inCluster] != right_rep and clusterSet[str_inCluster] != left_rep:
-                    right_rep_distance = self.dissimilarityDistance(right_rep,clusterSet[str_inCluster])
-                    left_rep_distance  = self.dissimilarityDistance(left_rep,clusterSet[str_inCluster])
+                    right_rep_distance = self.dissimilarity_distance(right_rep,clusterSet[str_inCluster])
+                    left_rep_distance  = self.dissimilarity_distance(left_rep,clusterSet[str_inCluster])
 
                     if rep_distance == 0:
                         distances_vector[clusterSet[str_inCluster]] = 0
@@ -421,7 +425,7 @@ class WinnER:
         notwantedPrototypes = []
         for pr_1 in tqdm(range(0,numOfPrototypes), desc="Prototype optimization", disable = self.disable_tqdm, dynamic_ncols = True):
             for pr_2 in range(pr_1+1,numOfPrototypes):
-                if self.dissimilarityDistance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypes_optimization_thr:
+                if self.dissimilarity_distance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypes_optimization_thr:
                     notwantedPrototypes.append(Prototypes[pr_2])
 
         newPrototypes = list((set(Prototypes)).difference(set(notwantedPrototypes)))
@@ -471,11 +475,11 @@ class WinnER:
         if self.embedding_distance_metric == 'l_inf':
             return self.l_inf(VantageObjects,S,s,p)
         elif self.embedding_distance_metric == 'edit':
-            return self.dissimilarityDistance(S[s],VantageObjects[p])
+            return self.dissimilarity_distance(S[s],VantageObjects[p])
         elif self.embedding_distance_metric == 'jaccard':
-            return jaccard_distance(self.S_set[S[s]],self.S_set[VantageObjects[p]])
+            return jaccard_distance(self._string_array[S[s]],self._string_array[VantageObjects[p]])
         elif self.embedding_distance_metric == 'euclid_jaccard':
-            return self.hybridEuclidJaccard(self.S_set[S[s]],self.S_set[VantageObjects[p]])
+            return self.hybridEuclidJaccard(self._string_array[S[s]],self._string_array[VantageObjects[p]])
         else:
             warnings.warn("Available metrics: edit, jaccard, euclid_jaccard, l_inf")
     
@@ -483,8 +487,8 @@ class WinnER:
         max_distance = None
         for pp in range(0,VantageObjects.size):
             if VantageObjects[pp] != None:
-                string_distance = self.dissimilarityDistance(S[s],VantageObjects[pp])    # distance String-i -> Vantage Object
-                VO_distance     = self.dissimilarityDistance(VantageObjects[p],VantageObjects[pp])    # distance Vantage Object-j -> Vantage Object-i
+                string_distance = self.dissimilarity_distance(S[s],VantageObjects[pp])    # distance String-i -> Vantage Object
+                VO_distance     = self.dissimilarity_distance(VantageObjects[p],VantageObjects[pp])    # distance Vantage Object-j -> Vantage Object-i
 
                 abs_diff = abs(string_distance-VO_distance)
 
@@ -511,31 +515,31 @@ class WinnER:
         self.similarityProb_matrix = np.empty([num_of_vectors,num_of_vectors],dtype=np.float)* np.nan
         self.mapping = {}
         
-        self.num_of_comparisons = 0
+        self._num_of_comparisons = 0
         self.diffObjectsComparedSuccess = 0
         self.difObjectsCompared = 0
         self.sameObjectsCompared = 0
         self.sameObjectsComparedSuccess = 0
-        self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
+        self.bloomFilter = BloomFilter(max_elements = self.bloom_filter_size, error_rate=0.1)
 
         metric = self.metric
 
-        for v_index in range(0,num_of_vectors,1):
-            v_vector_id = vectors[v_index]
-
+        for x in range(0, num_of_vectors, 1):
+            
             # Loop to all the other
-            for i_index in range(v_index+1,num_of_vectors,1):
-                i_vector_id = vectors[i_index]
+            for y in range(x + 1, num_of_vectors, 1):
+                v_vector_id = x
+                i_vector_id = y
 
-                cantor_unique_index = q_encode(v_vector_id, i_vector_id)
+                cantor_unique_index = q_encode(x, y)
                 if cantor_unique_index in self.bloomFilter:
                     continue
                 else:
                     self.bloomFilter.add(cantor_unique_index)
 
-                self.num_of_comparisons += 1
+                self._num_of_comparisons += 1
 
-                if self.num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
+                if self._num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
                     warnings.warn("Upper bound of comparisons has been achieved", DeprecationWarning)
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
@@ -574,25 +578,28 @@ class WinnER:
                 else:
                     warnings.warn("Similarity not exists, available similarity metrics: kendal, rbo, spearman, pearson")
 
-
                 self.similarityProb_matrix[v_vector_id][i_vector_id] = similarity_prob
                 self.similarityProb_matrix[i_vector_id][v_vector_id] = similarity_prob
                 
-                if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
-                    self.sameObjectsCompared += 1
-
-                if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
-                    self.difObjectsCompared += 1
-
+                if self._true_matrix is not None: 
+                    
+                    if self._true_matrix[v_vector_id][i_vector_id] or self._true_matrix[i_vector_id][v_vector_id]:
+                        self.sameObjectsCompared += 1
+                    
+                    if self._true_matrix[v_vector_id][i_vector_id] == 0 or self._true_matrix[i_vector_id][v_vector_id] == 0:
+                        self.difObjectsCompared += 1
+                
                 if similarity_prob > self.similarity_threshold:
                     if v_vector_id not in self.mapping.keys():
                         self.mapping[v_vector_id] = []
                     self.mapping[v_vector_id].append(i_vector_id)  # insert into mapping
                     self.mapping_matrix[v_vector_id][i_vector_id] = 1  # inform prediction matrix
                     self.mapping_matrix[i_vector_id][v_vector_id] = 1  # inform prediction matrix
-                    if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
+
+                    if (self._true_matrix is not None) and  self._true_matrix[v_vector_id][i_vector_id] or self._true_matrix[i_vector_id][v_vector_id]:
                         self.sameObjectsComparedSuccess += 1
-                elif similarity_prob <= self.similarity_threshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
+
+                elif similarity_prob <= self.similarity_threshold and self._true_matrix is not None and self._true_matrix[v_vector_id][i_vector_id] == 0 and self._true_matrix[i_vector_id][v_vector_id] == 0:
                     self.diffObjectsComparedSuccess += 1
 
         return self.mapping, np.triu(self.mapping_matrix)
@@ -601,7 +608,7 @@ class WinnER:
     def SimilarityEvaluationBucket(self, bucket_vectors, lock):
         logging.info('Bucket checking')
         metric = self.metric
-        vectors = self.Embeddings
+        vectors = self.embeddings
         vector_x_dimension = vectors.shape[1]
         num_of_vectors = len(bucket_vectors)
         for v_index in range(0,num_of_vectors,1):
@@ -620,10 +627,10 @@ class WinnER:
                     lock.release()
 
                 lock.acquire()
-                self.num_of_comparisons += 1
+                self._num_of_comparisons += 1
                 lock.release()
 
-                if self.num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
+                if self._num_of_comparisons >= self.MAX_NUMBER_OF_COMPARISONS:
                     warnings.warn("Upper bound of comparisons has been achieved", DeprecationWarning)
                 
                 if metric == None or metric == 'kendal':  # Simple Kendal tau metric
@@ -667,11 +674,13 @@ class WinnER:
                 self.similarityProb_matrix[v_vector_id][i_vector_id] = similarity_prob
                 self.similarityProb_matrix[i_vector_id][v_vector_id] = similarity_prob
                 
-                if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
-                    self.sameObjectsCompared += 1
-
-                if self.true_matrix[v_vector_id][i_vector_id] == 0 or self.true_matrix[i_vector_id][v_vector_id] == 0:
-                    self.difObjectsCompared += 1
+                if self._true_matrix is not None: 
+                    
+                    if self._true_matrix[v_vector_id][i_vector_id] or self._true_matrix[i_vector_id][v_vector_id]:
+                        self.sameObjectsCompared += 1
+                    
+                    if self._true_matrix[v_vector_id][i_vector_id] == 0 or self._true_matrix[i_vector_id][v_vector_id] == 0:
+                        self.difObjectsCompared += 1
 
                 if similarity_prob > self.similarity_threshold:
                     if v_vector_id not in self.mapping.keys():
@@ -679,9 +688,9 @@ class WinnER:
                     self.mapping[v_vector_id].append(i_vector_id)  # insert into mapping
                     self.mapping_matrix[v_vector_id][i_vector_id] = 1  # inform prediction matrix
                     self.mapping_matrix[i_vector_id][v_vector_id] = 1  # inform prediction matrix
-                    if self.true_matrix[v_vector_id][i_vector_id] or self.true_matrix[i_vector_id][v_vector_id]:
+                    if self._true_matrix is not None and self._true_matrix[v_vector_id][i_vector_id] or self._true_matrix[i_vector_id][v_vector_id]:
                         self.sameObjectsComparedSuccess += 1
-                elif similarity_prob <= self.similarity_threshold and self.true_matrix[v_vector_id][i_vector_id] == 0 and self.true_matrix[i_vector_id][v_vector_id] == 0:
+                elif similarity_prob <= self.similarity_threshold and self._true_matrix[v_vector_id][i_vector_id] == 0 and self._true_matrix[i_vector_id][v_vector_id] == 0:
                     self.diffObjectsComparedSuccess += 1
                 lock.release()
 
@@ -693,12 +702,12 @@ class WinnER:
         self.similarityProb_matrix = np.empty([num_of_vectors,num_of_vectors],dtype=np.float)* np.nan
         self.mapping = {}
         
-        self.num_of_comparisons = 0
+        self._num_of_comparisons = 0
         self.diffObjectsComparedSuccess = 0
         self.difObjectsCompared = 0
         self.sameObjectsCompared = 0
         self.sameObjectsComparedSuccess = 0
-        self.bloomFilter = BloomFilter(max_elements = self.bloomFilterMaxElemnets, error_rate=0.1)
+        self.bloomFilter = BloomFilter(max_elements = self.bloom_filter_size, error_rate=0.1)
         self.numOfBuckets = len(buckets.keys())
 
         # Loop for every bucket
@@ -741,12 +750,12 @@ class WinnER:
     #                          Evaluation                               # 
     #####################################################################
 
-    def evaluate(self, predicted_matrix, true_matrix, with_classification_report=False, with_confusion_matrix=True, with_detailed_report=False):
+    def evaluate(self, predicted_matrix, with_classification_report=False, with_confusion_matrix=True, with_detailed_report=False):
         
         if self.verbose_level >= 0:
             print("#####################################################################\n#                          Evaluation                               #\n#####################################################################\n")
-        transformToVector = np.triu_indices(len(true_matrix))    
-        true_matrix = true_matrix[transformToVector]
+        transformToVector = np.triu_indices(len(self._true_matrix))    
+        true_matrix = self._true_matrix[transformToVector]
         predicted_matrix = predicted_matrix[transformToVector]
         
         acc = 100*accuracy_score(true_matrix, predicted_matrix)
@@ -838,14 +847,14 @@ def report(model):
     for key in model.buckets.keys():
         print(key," -> ", len(model.buckets[key]))
     print("\n> 4. Similarity checking\n")
-    print("Total comparisons: ", model.num_of_comparisons)
+    print("Total comparisons: ", model._num_of_comparisons)
     print(" -> between same objects: ", model.sameObjectsCompared )
     print(" -> between same objects with success: ", model.sameObjectsComparedSuccess)
     print(" -> between different objects: ", model.difObjectsCompared)
     print(" -> between different objects with success: ", model.diffObjectsComparedSuccess)
     
 
-def customClassificationReport(predicted_matrix, true_matrix):
+def custom_classification_report(predicted_matrix, true_matrix):
     
     size = len(predicted_matrix)
     true_positives = 0; false_positives = 0; true_negatives = 0; false_negatives = 0;
