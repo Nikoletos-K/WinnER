@@ -420,25 +420,25 @@ class WinnER:
 
         return median_value
 
-    def OptimizeClusterSelection(self,Prototypes,numOfPrototypes):
+    def OptimizeClusterSelection(self, prototypes, num_of_prototypes):
 
-        notwantedPrototypes = []
-        for pr_1 in tqdm(range(0,numOfPrototypes), desc="Prototype optimization", disable = self.disable_tqdm, dynamic_ncols = True):
-            for pr_2 in range(pr_1+1,numOfPrototypes):
-                if self.dissimilarity_distance(Prototypes[pr_1],Prototypes[pr_2]) < self.prototypes_optimization_thr:
-                    notwantedPrototypes.append(Prototypes[pr_2])
+        rejected_prototypes = []
+        for pr_1 in tqdm(range(0,num_of_prototypes), desc="Prototype optimization", disable = self.disable_tqdm, dynamic_ncols = True):
+            for pr_2 in range(pr_1+1,num_of_prototypes):
+                if self.dissimilarity_distance(prototypes[pr_1],prototypes[pr_2]) < self.prototypes_optimization_thr:
+                    rejected_prototypes.append(prototypes[pr_2])
 
-        newPrototypes = list((set(Prototypes)).difference(set(notwantedPrototypes)))
+        new_prototypes = list((set(prototypes)).difference(set(rejected_prototypes)))
         
         if self.verbose_level > 1:
             print("Prototypes before:")
-            print(Prototypes)
+            print(prototypes)
             print("Not wanted:")
-            print(set(notwantedPrototypes) )
+            print(set(rejected_prototypes) )
             print("Final:")
-            print(newPrototypes)
+            print(new_prototypes)
 
-        return newPrototypes,len(newPrototypes)
+        return new_prototypes,len(new_prototypes)
 
 
     #####################################################################
