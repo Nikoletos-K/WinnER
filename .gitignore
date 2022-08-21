@@ -1,1 +1,7 @@
-thesis_feed
+thesis_feed/
+prev_notebooks/
+data/sigmod_2022/
+data/cora1stEdition/
+data/.ipynb_checkpoints
+.ipynb_checkpoints/
+workspace.code-workspace
