@@ -5,3 +5,17 @@ data/cora1stEdition/
 data/.ipynb_checkpoints
 .ipynb_checkpoints/
 workspace.code-workspace
+src/.ipynb_checkpoints/
+src/.vscode/
+src/__pycache__/
+src/utils/__pycache__/
+src/utils/.ipynb_checkpoints/
+src/datasets/utils/__pycache__/
+src/datasets/common/__pycache__/
+src/hash/__pycache__/
+src/optuna_tuning/__pycache__/
+src/optuna_tuning/.ipynb_checkpoints/
+src/optuna_tuning/archived/
+src/plot/__pycache__/
+
+
