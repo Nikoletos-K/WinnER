@@ -4,7 +4,7 @@
   <img align="center" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/winner.logo.png?raw=true" alt="WinnER" width="350"/>
 </div>
 <div align="center">
-<strong>A Winner-Take-All Hashing-Based Unsupervised Model for Entity Resolution Problems</strong><br>
+<strong>A Winner-Take-All Hashing-Based Unsupervised Model<br> for Entity Resolution Problems</strong><br>
 </div>
 <br>
 <h2></h2>
