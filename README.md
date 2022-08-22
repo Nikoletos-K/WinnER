@@ -101,8 +101,8 @@ Lastly, we present our best scores:
 
 As part of this work we also examined the prototype selection algorithm, by visualing it and evaaluating it using the MMD critic. Bellow figures depict the selected prototypes among the overall dataset.
 <div align="center">
-<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_MDS.png?raw=true"  width="500"/>
-<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_PCA.png?raw=true"  width="500"/>
+<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_MDS.png?raw=true"  width="400"/>
+<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_PCA.png?raw=true"  width="400"/>
 </div>
 
 ### Comparison with JedAI toolkit
@@ -149,3 +149,7 @@ the similar pairs, while keeping Precision above 70%.
 - [Alex Delis, Professor NKUA](https://nyuad.nyu.edu/en/academics/divisions/science/faculty/alex-delis.html)
 - [Vassilios Verykios, Professor Hellenic Open University](https://www.eap.gr/en/verykios/)
 
+<h2></h2>
+<div align="right">
+© 2022, Konstantinos Nikoletos
+</div>
