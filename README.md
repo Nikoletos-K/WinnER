@@ -32,7 +32,7 @@ of our methodology among a famous Entity Resolution data set.
 
 ## Model corpus
 
-This work builds on the paper [Entity Resolution in Dissimilarity Spaces](https://dl.acm.org/doi/10.1145/3503823.3503899) by  Vassilios Verykios and Dimitris Karapiperis, architects of this model corpus. They created an efficient and really robust model, that makes unsupervised learning into string ER data sets, with great space and time complexity. Our work, focuses mainly on experiment and finally improve certain parts of the initial idea. Within that approach, we used the theoretical proofs from the [paper](https://link.springer.com/article/10.1007/BF01896809) to convert the initial Dissimilarity space into a Euclidean-Dissimilarity space. In addition, we performed some optimizations to the prototype selection algorithm (Algorithm 1), where we discovered and resolved a vulnerability. In comparison to similar ER clustering frameworks, the key distinctive feature of this model, is the use of a hashing schema in combination with the rank-ordered transformation of the initial data. Moreover, in this study, we offer a detailed presentation of the framework described in the initial paper, as well as our modifications and the results we managed to achieve. This framework is an open-source project, as we also developed an end-to-end model, using Python.
+This work builds on the paper [Entity Resolution in Dissimilarity Spaces](https://dl.acm.org/doi/10.1145/3503823.3503899) by  [Vassilios Verykios](https://www.eap.gr/en/verykios/) and [Dimitris Karapiperis](https://scholar.google.gr/citations?user=3KkH_YQAAAAJ&hl=en), architects of this model corpus. They created an efficient and really robust model, that makes unsupervised learning into string ER data sets, with great space and time complexity. Our work, focuses mainly on experiment and finally improve certain parts of the initial idea. Within that approach, we used the theoretical proofs from the [paper](https://link.springer.com/article/10.1007/BF01896809) to convert the initial Dissimilarity space into a Euclidean-Dissimilarity space. In addition, we performed some optimizations to the prototype selection algorithm (Algorithm 1), where we discovered and resolved a vulnerability. In comparison to similar ER clustering frameworks, the key distinctive feature of this model, is the use of a hashing schema in combination with the rank-ordered transformation of the initial data. Moreover, in this study, we offer a detailed presentation of the framework described in the initial paper, as well as our modifications and the results we managed to achieve. This framework is an open-source project, as we also developed an end-to-end model, using Python.
 
 <img align="left" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/winner-flow.png?raw=true"  width="500"/>
 
@@ -65,19 +65,24 @@ __WinnER__ has the bellow five hyper-parameters:
 
 ## Demonstration
 
-## Results - Optuna tuning
+We provide useful python notebooks for demonstration of our framwork in the bellow datasets:
+|Dataset|CORA|CDDB|CENSUS|
+|---|:-:|:-:|:-:|
+| Link to Python Notebook|[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Nikoletos-K/WinnER/blob/main/src/WinnER-CORA.ipynb)|[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Nikoletos-K/WinnER/blob/main/src/WinnER-CDDB.ipynb)|[![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Nikoletos-K/WinnER/blob/main/src/WinnER-CENSUS.ipynb)|
 
+## Results on CORA dataset
 
-<img align="center" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/scores_comparison.png?raw=true"  width="800"/>
-<div align="center">
-<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_MDS.png?raw=true"  width="500"/>
-<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_PCA.png?raw=true"  width="500"/>
-</div>
+### Optuna tuning
+
+Optuna is hyper-parameter tuning framework, famous in the area of Data Science and particularly in Deep Learning. We utilized this tool for our hyper-parameter tuning. Starting with the bellow plot in which we see all the tries made by Optuna and the highest F1 scores achieved.
 
 <img align="center" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/plot_parallel_coordinate_CORA.png?raw=true"  width="800"/>
+
+We also created plots that visualize the classification statistics in order to avoid low recall and high precision or the opposite. In the diagram bellow it is obvious that in the trials with the highest F1-score we managed very good scores both among the same and different entities.
+
 <img align="center" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/comparisons-opt.png?raw=true"  width="1000"/>
 
-
+Lastly, we present our best scores:
 
 | Trial id 	| Recall 	| F1 	| Precision 	| Accuracy 	| Total Time (m) 	|
 |:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|
@@ -92,8 +97,36 @@ __WinnER__ has the bellow five hyper-parameters:
 | 83 	| 83.95 	| 78.78 	| 74.21 	| 99.07 	| 05:48 	|
 | 41 	| 82.65 	| 78.77 	| 75.24 	| 99.09 	| 02:50 	|
 
+### Prototype selection evaluation
+
+As part of this work we also examined the prototype selection algorithm, by visualing it and evaaluating it using the MMD critic. Bellow figures depict the selected prototypes among the overall dataset.
+<div align="center">
+<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_MDS.png?raw=true"  width="500"/>
+<img src="https://github.com/Nikoletos-K/WinnER/blob/main/img/SpaceVisualization2D_PCA.png?raw=true"  width="500"/>
+</div>
+
+### Comparison with JedAI toolkit
+
+In order to evaluate the model we have developed, it is much needed to compare it with
+other existing models, developed for Entity Resolution. In this study, we utilized a state-of-
+the-art toolkit named JedAI. JedAI, is a toolkit for Entity Resolution that implements
+numerous state-of-the-art, domain-independent methods, and provides an intuitive Graph-
+ical User Interface that can be used for ER experiments and evaluation on data sets.
 
 
+In this part, we compare our models performance to other well-known ER algorithms. All
+of these models were created quickly and efficiently with JedAI, which is simple to use and
+gives consistent results in order to conduct our experiments. Following table summarizes
+some of the workflows.
+
+
+<img align="center" src="https://github.com/Nikoletos-K/WinnER/blob/main/img/scores_comparison.png?raw=true"  width="800"/>
+
+The above figure depicts all the scores shown in the previous table in comparison with our model. WinnER
+has the greatest Recall score when compared to the other models. However WinnER
+receives a low Precision score at the same time as it is obvious from the above figure.
+This comparison demonstrates us the ability of our model to predict with high accuracy
+the similar pairs, while keeping Precision above 70%.
 
 | # 	| Block  Building 	| Block  Cleaning 	| Comparison  Cleaning 	| Entity  Matching 	| Entity  Clustering 	| Recall  (%) 	| F-Measure  (%) 	| Precision  (%) 	| Total Time  (s) 	|
 |:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|:---:	|
@@ -104,13 +137,15 @@ __WinnER__ has the bellow five hyper-parameters:
 | 5 	| Standard/Token  Blocking 	| Block-Filtering 	| Cardinality Node  Pruning (CNP-JS) 	| Profile  Matcher* 	| Connected  Components  Clustering 	| 81.18 	| 85.23 	| 88.90 	| 00:07 	|
 
 
-
 ## Technologies used
 
-
-
+- Python 3.9
+- Optuna [v2.10.1](https://github.com/optuna/optuna/releases/tag/v2.10.1)
+- JedAI [v3.2.1](https://github.com/scify/JedAIToolkit/releases/tag/v3.2.1)
+- Plotly [5.10.0](https://pypi.org/project/plotly/)
+- Anaconda
 
 ## Supervisors
-- Alexios Delis, Professor NKUA
-- Vassilios Verykios, Professor Hellenic Open University
+- [Alex Delis, Professor NKUA](https://nyuad.nyu.edu/en/academics/divisions/science/faculty/alex-delis.html)
+- [Vassilios Verykios, Professor Hellenic Open University](https://www.eap.gr/en/verykios/)
 
